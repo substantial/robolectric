@@ -15,6 +15,7 @@ import com.xtremelabs.robolectric.util.DatabaseConfig;
 import com.xtremelabs.robolectric.util.DatabaseConfig.DatabaseMap;
 import com.xtremelabs.robolectric.util.DatabaseConfig.UsingDatabaseMap;
 import com.xtremelabs.robolectric.util.SQLiteMap;
+import org.junit.runner.Runner;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
@@ -40,11 +41,12 @@ import java.util.Map;
  * Installs a {@link RobolectricClassLoader} and {@link com.xtremelabs.robolectric.res.ResourceLoader} in order to
  * provide a simulation of the Android runtime environment.
  */
-public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements RobolectricTestRunnerInterface {
+public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements RobolectricTestRunnerInterface, RobolectricContext.Factory {
+    private static final TestRunnerLocal<RobolectricContext> contextLocal = new TestRunnerLocal<RobolectricContext>();
     private static Map<RobolectricConfig, ResourceLoader> resourceLoaderForRootAndDirectory = new HashMap<RobolectricConfig, ResourceLoader>();
 
     // field in both the instrumented and original classes
-    RobolectricContext sharedRobolectricContext;
+    private RobolectricContext sharedRobolectricContext;
 
     // fields in the RobolectricTestRunner in the original ClassLoader
     private RobolectricTestRunnerInterface delegate;
@@ -58,22 +60,36 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
      * @throws InitializationError if junit says so
      */
     public RobolectricTestRunner(final Class<?> testClass) throws InitializationError {
-        super(RobolectricContext.bootstrap(RobolectricTestRunner.class, testClass, new RobolectricContext.Factory() {
-            @Override
-            public RobolectricContext create() {
-                return new RobolectricContext();
-            }
-        }));
+        super(testClass);
 
-        sharedRobolectricContext = RobolectricContext.mostRecentRobolectricContext; // ick, race condition
-
-        if (isBootstrapped(getClass())) {
+        Class<? extends RobolectricTestRunner> robolectricTestRunnerClass = getClass();
+        if (isBootstrapped(robolectricTestRunnerClass) || isBootstrapped(testClass)) {
+            if (!isBootstrapped(testClass)) throw new IllegalStateException("test class is somehow not bootstrapped");
             databaseMap = setupDatabaseMap(testClass, new SQLiteMap());
         } else {
+            RobolectricContext robolectricContext;
+            synchronized (contextLocal) {
+                robolectricContext = contextLocal.get(this);
+                if (robolectricContext == null) {
+                    robolectricContext = createRobolectricContext();
+                    System.out.println("creating robolectricContext = " + robolectricContext + " for " + this);
+                    contextLocal.set(this, robolectricContext);
+                }
+            }
+    
+            robolectricContext.bootstrapTestClass(testClass);
+            sharedRobolectricContext = robolectricContext;
+
             delegate = sharedRobolectricContext.getBootstrappedTestRunner(this);
+            delegate.setRobolectricContext(sharedRobolectricContext);
             Thread.currentThread().setContextClassLoader(sharedRobolectricContext.getRobolectricClassLoader());
             databaseMap = null;
         }
+    }
+
+    @Override
+    public void setRobolectricContext(RobolectricContext robolectricContext) {
+        this.sharedRobolectricContext = robolectricContext;
     }
 
     public RobolectricContext getRobolectricContext() {
@@ -84,37 +100,47 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
         return clazz.getClassLoader() instanceof RobolectricClassLoader;
     }
 
-    @Override protected Statement methodBlock(final FrameworkMethod method) {
-        sharedRobolectricContext.getClassHandler().reset();
-      try {
-        delegate.internalBeforeTest(method.getMethod());
-      } catch (Exception e) {
-        e.printStackTrace();
-        throw new RuntimeException(e);
-      }
-
-      final Statement statement = super.methodBlock(method);
-        return new Statement() {
-            @Override public void evaluate() throws Throwable {
-            	HashMap<Field,Object> withConstantAnnos = getWithConstantAnnotations(method.getMethod());
-
-            	// todo: this try/finally probably isn't right -- should mimic RunAfters? [xw]
-                try {
-                	if (withConstantAnnos.isEmpty()) {
-                		statement.evaluate();
-                	}
-                	else {
-                		synchronized(this) {
-	                		setupConstants(withConstantAnnos);
-	                		statement.evaluate();
-	                		setupConstants(withConstantAnnos);
-                		}
-                	}
-                } finally {
-                    delegate.internalAfterTest(method.getMethod());
-                }
+    @Override public Statement methodBlock(final FrameworkMethod method) {
+        if (delegate != null) {
+            try {
+                Class<?> bootstrappedTestClass = delegate.getTestClass().getJavaClass();
+                FrameworkMethod delegateMethod = new FrameworkMethod(bootstrappedTestClass.getMethod(method.getName(), method.getMethod().getParameterTypes()));
+                return delegate.methodBlock(delegateMethod);
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
             }
-        };
+        } else {
+            sharedRobolectricContext.getClassHandler().reset();
+            try {
+                internalBeforeTest(method.getMethod());
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+
+            final Statement statement = super.methodBlock(method);
+            return new Statement() {
+                @Override public void evaluate() throws Throwable {
+                    HashMap<Field,Object> withConstantAnnos = getWithConstantAnnotations(method.getMethod());
+
+                    // todo: this try/finally probably isn't right -- should mimic RunAfters? [xw]
+                    try {
+                        if (withConstantAnnos.isEmpty()) {
+                            statement.evaluate();
+                        }
+                        else {
+                            synchronized(this) {
+                                setupConstants(withConstantAnnos);
+                                statement.evaluate();
+                                setupConstants(withConstantAnnos);
+                            }
+                        }
+                    } finally {
+                        internalAfterTest(method.getMethod());
+                    }
+                }
+            };
+        }
     }
 
     /*
@@ -430,5 +456,22 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
 	    	}
     	}
     	return dbMap;
+    }
+
+    @Override
+    public RobolectricContext createRobolectricContext() {
+        return new RobolectricContext();
+    }
+
+    public static class TestRunnerLocal<T> {
+        private Map<Class<? extends Runner>, T> locals = new HashMap<Class<? extends Runner>, T>();
+
+        public T get(Runner testRunner) {
+            return locals.get(testRunner.getClass());
+        }
+
+        public T set(Runner testRunner, T t) {
+            return locals.put(testRunner.getClass(), t);
+        }
     }
 }

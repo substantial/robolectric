@@ -1,6 +1,5 @@
 package com.xtremelabs.robolectric;
 
-import android.app.Activity;
 import android.app.Application;
 import android.widget.TextView;
 import com.xtremelabs.robolectric.annotation.DisableStrictI18n;
@@ -95,12 +94,10 @@ public class RobolectricTestRunnerTest {
     
     public static class RunnerForTesting extends TestRunners.WithDefaults {
     	public static RunnerForTesting instance;
-        private final RobolectricConfig robolectricConfig;
 
         public RunnerForTesting(Class<?> testClass) throws InitializationError {
             super(testClass);
         	instance = this;
-            robolectricConfig = getRobolectricContext().getRobolectricConfig();
         }
 
         @Override protected Application createApplication() {
@@ -115,9 +112,4 @@ public class RobolectricTestRunnerTest {
             this.onCreateWasCalled = true;
         }
     }
-    
-    public static class MyTestActivity extends Activity {
-    	
-    }
-
 }

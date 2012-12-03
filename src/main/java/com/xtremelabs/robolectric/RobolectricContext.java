@@ -23,43 +23,16 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import static com.xtremelabs.robolectric.RobolectricTestRunner.isBootstrapped;
 
 public class RobolectricContext {
-    private static final Map<Class<? extends RobolectricTestRunner>, RobolectricContext> contextsByTestRunner = new HashMap<Class<? extends RobolectricTestRunner>, RobolectricContext>();
-
     private final RobolectricConfig robolectricConfig;
     private final RobolectricClassLoader robolectricClassLoader;
     private final ClassHandler classHandler;
     private static RepositorySystem repositorySystem;
-    public static RobolectricContext mostRecentRobolectricContext; // ick, race condition
 
     public interface Factory {
-        RobolectricContext create();
-    }
-
-    public static Class<?> bootstrap(Class<? extends RobolectricTestRunner> robolectricTestRunnerClass, Class<?> testClass, Factory factory) {
-        if (isBootstrapped(robolectricTestRunnerClass) || isBootstrapped(testClass)) {
-            if (!isBootstrapped(testClass)) throw new IllegalStateException("test class is somehow not bootstrapped");
-            return testClass;
-        }
-
-        RobolectricContext robolectricContext;
-        synchronized (contextsByTestRunner) {
-            robolectricContext = contextsByTestRunner.get(robolectricTestRunnerClass);
-            if (robolectricContext == null) {
-                robolectricContext = factory.create();
-                contextsByTestRunner.put(robolectricTestRunnerClass, robolectricContext);
-            }
-        }
-
-        mostRecentRobolectricContext = robolectricContext;
-
-        return robolectricContext.bootstrapTestClass(testClass);
+        RobolectricContext createRobolectricContext();
     }
 
     public RobolectricContext() {
@@ -72,10 +45,12 @@ public class RobolectricContext {
     }
 
     private ClassHandler createClassHandler(Setup setup) {
+        System.out.println("ROBO: createClassHandler");
         return new ShadowWrangler(setup);
     }
 
     public ClassCache createClassCache() {
+        System.out.println("ROBO: createClassCache");
         final String classCachePath = System.getProperty("cached.robolectric.classes.path");
         final File classCacheDirectory;
         if (null == classCachePath || "".equals(classCachePath.trim())) {
@@ -88,10 +63,12 @@ public class RobolectricContext {
     }
 
     public AndroidTranslator createAndroidTranslator(ClassHandler classHandler, Setup setup, ClassCache classCache) {
+        System.out.println("ROBO: createAndroidTranslator");
         return new AndroidTranslator(classHandler, classCache, setup);
     }
 
     protected RobolectricConfig createRobolectricConfig() {
+        System.out.println("ROBO: createRobolectricConfig");
         return new RobolectricConfig(new File("."));
     }
 
@@ -109,7 +86,7 @@ public class RobolectricContext {
         return resourcePaths;
     }
 
-    private Class<?> bootstrapTestClass(Class<?> testClass) {
+    Class<?> bootstrapTestClass(Class<?> testClass) {
         Class<?> bootstrappedTestClass = robolectricClassLoader.bootstrap(testClass);
         return bootstrappedTestClass;
     }
@@ -123,24 +100,6 @@ public class RobolectricContext {
             Constructor<?> constructorForDelegate = bootstrappedTestRunnerClass.getConstructor(Class.class);
             return (RobolectricTestRunnerInterface) constructorForDelegate.newInstance(bootstrappedTestClass);
         } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void setRobolectricContextField(Class<?> testRunnerClass) {
-        Class<?> clazz = testRunnerClass;
-        while (!clazz.getName().equals(RobolectricTestRunner.class.getName())) {
-            clazz = clazz.getSuperclass();
-            if (clazz == null)
-                throw new RuntimeException(testRunnerClass + " doesn't extend RobolectricTestRunner");
-        }
-        try {
-            Field field = clazz.getDeclaredField("sharedRobolectricContext");
-            field.setAccessible(true);
-            field.set(null, this);
-        } catch (NoSuchFieldException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
