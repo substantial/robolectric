@@ -6,6 +6,7 @@ import com.xtremelabs.robolectric.annotation.EnableStrictI18n;
 import com.xtremelabs.robolectric.annotation.Values;
 import com.xtremelabs.robolectric.bytecode.ClassHandler;
 import com.xtremelabs.robolectric.bytecode.RobolectricClassLoader;
+import com.xtremelabs.robolectric.bytecode.ShadowWrangler;
 import com.xtremelabs.robolectric.internal.RobolectricTestRunnerInterface;
 import com.xtremelabs.robolectric.res.ResourceLoader;
 import com.xtremelabs.robolectric.res.ResourcePath;
@@ -20,6 +21,7 @@ import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.Statement;
+import org.junit.runners.model.TestClass;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -45,11 +47,12 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
     private static final TestRunnerLocal<RobolectricContext> contextLocal = new TestRunnerLocal<RobolectricContext>();
     private static Map<RobolectricConfig, ResourceLoader> resourceLoaderForRootAndDirectory = new HashMap<RobolectricConfig, ResourceLoader>();
 
+    private Class<?> bootstrappedTestClass;
+
     // field in both the instrumented and original classes
     private RobolectricContext sharedRobolectricContext;
 
     // fields in the RobolectricTestRunner in the original ClassLoader
-    private RobolectricTestRunnerInterface delegate;
     private final DatabaseMap databaseMap;
 
     /**
@@ -62,29 +65,7 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
     public RobolectricTestRunner(final Class<?> testClass) throws InitializationError {
         super(testClass);
 
-        Class<? extends RobolectricTestRunner> robolectricTestRunnerClass = getClass();
-        if (isBootstrapped(robolectricTestRunnerClass) || isBootstrapped(testClass)) {
-            if (!isBootstrapped(testClass)) throw new IllegalStateException("test class is somehow not bootstrapped");
-            databaseMap = setupDatabaseMap(testClass, new SQLiteMap());
-        } else {
-            RobolectricContext robolectricContext;
-            synchronized (contextLocal) {
-                robolectricContext = contextLocal.get(this);
-                if (robolectricContext == null) {
-                    robolectricContext = createRobolectricContext();
-                    System.out.println("creating robolectricContext = " + robolectricContext + " for " + this);
-                    contextLocal.set(this, robolectricContext);
-                }
-            }
-    
-            robolectricContext.bootstrapTestClass(testClass);
-            sharedRobolectricContext = robolectricContext;
-
-            delegate = sharedRobolectricContext.getBootstrappedTestRunner(this);
-            delegate.setRobolectricContext(sharedRobolectricContext);
-            Thread.currentThread().setContextClassLoader(sharedRobolectricContext.getRobolectricClassLoader());
-            databaseMap = null;
-        }
+        databaseMap = setupDatabaseMap(testClass, new SQLiteMap());
     }
 
     @Override
@@ -101,45 +82,90 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
     }
 
     @Override public Statement methodBlock(final FrameworkMethod method) {
-        if (delegate != null) {
-            try {
-                Class<?> bootstrappedTestClass = delegate.getTestClass().getJavaClass();
-                FrameworkMethod delegateMethod = new FrameworkMethod(bootstrappedTestClass.getMethod(method.getName(), method.getMethod().getParameterTypes()));
-                return delegate.methodBlock(delegateMethod);
-            } catch (NoSuchMethodException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            sharedRobolectricContext.getClassHandler().reset();
-            try {
-                internalBeforeTest(method.getMethod());
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
+        ensureBootstrappedTestClass();
 
-            final Statement statement = super.methodBlock(method);
-            return new Statement() {
-                @Override public void evaluate() throws Throwable {
-                    HashMap<Field,Object> withConstantAnnos = getWithConstantAnnotations(method.getMethod());
+        sharedRobolectricContext.getClassHandler().reset();
 
-                    // todo: this try/finally probably isn't right -- should mimic RunAfters? [xw]
-                    try {
-                        if (withConstantAnnos.isEmpty()) {
-                            statement.evaluate();
-                        }
-                        else {
-                            synchronized(this) {
-                                setupConstants(withConstantAnnos);
-                                statement.evaluate();
-                                setupConstants(withConstantAnnos);
-                            }
-                        }
-                    } finally {
-                        internalAfterTest(method.getMethod());
+        final FrameworkMethod bootstrappedMethod;
+        try {
+            bootstrappedMethod = new FrameworkMethod(bootstrappedTestClass.getMethod(method.getName(), method.getMethod().getParameterTypes()));
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            internalBeforeTest(bootstrappedMethod.getMethod());
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+
+        final Statement statement = super.methodBlock(bootstrappedMethod);
+        return new Statement() {
+            @Override public void evaluate() throws Throwable {
+                HashMap<Field,Object> withConstantAnnos = getWithConstantAnnotations(method.getMethod());
+
+                // todo: this try/finally probably isn't right -- should mimic RunAfters? [xw]
+                try {
+                    if (withConstantAnnos.isEmpty()) {
+                        statement.evaluate();
                     }
+                    else {
+                        synchronized(this) {
+                            setupConstants(withConstantAnnos);
+                            statement.evaluate();
+                            setupConstants(withConstantAnnos);
+                        }
+                    }
+                } finally {
+                    internalAfterTest(bootstrappedMethod.getMethod());
                 }
-            };
+            }
+        };
+    }
+
+    private void ensureBootstrappedTestClass() {
+        if (bootstrappedTestClass == null) {
+            RobolectricContext robolectricContext;
+            synchronized (contextLocal) {
+                robolectricContext = contextLocal.get(this);
+                if (robolectricContext == null) {
+                    robolectricContext = createRobolectricContext();
+                    System.out.println("creating robolectricContext = " + robolectricContext + " for " + this);
+                    contextLocal.set(this, robolectricContext);
+                }
+            }
+            sharedRobolectricContext = robolectricContext;
+
+            bootstrappedTestClass = robolectricContext.bootstrapTestClass(getTestClass().getJavaClass());
+
+            Thread.currentThread().setContextClassLoader(sharedRobolectricContext.getRobolectricClassLoader());
+        }
+    }
+
+    public interface DelegateInterface {
+        void resetStaticState();
+        public void setupApplicationState(Method testMethod);
+    }
+
+    public static class Delegate implements DelegateInterface {
+        @Override
+        public void resetStaticState() {
+            Robolectric.resetStaticState();
+        }
+
+        public void setupApplicationState(Method testMethod) {
+            boolean strictI18n = determineI18nStrictState(testMethod);
+
+            ResourceLoader resourceLoader = getResourceLoader(sharedRobolectricContext.getRobolectricConfig());
+            resourceLoader.setLayoutQualifierSearchPath();
+            resourceLoader.setQualifiers(determineResourceQualifiers(testMethod));
+            resourceLoader.setStrictI18n(strictI18n);
+
+            ClassHandler classHandler = sharedRobolectricContext.getClassHandler();
+            classHandler.setStrictI18n(strictI18n);
+
+            Robolectric.application = ShadowApplication.bind(createApplication(), resourceLoader);
         }
     }
 
@@ -150,7 +176,8 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
         setupLogging();
         configureShadows(method);
 
-        Robolectric.resetStaticState();
+        DelegateInterface delegate = getDelegate();
+        delegate.resetStaticState();
         resetStaticState();
 
         DatabaseConfig.setDatabaseMap(databaseMap); //Set static DatabaseMap in DBConfig
@@ -158,6 +185,19 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
         setupApplicationState(method);
 
         beforeTest(method);
+    }
+
+    private DelegateInterface getDelegate() {
+        try {
+            Class<DelegateInterface> delegateClass = (Class<DelegateInterface>) bootstrappedTestClass.getClassLoader().loadClass(Delegate.class.getName());
+            return delegateClass.newInstance();
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (InstantiationException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override public void internalAfterTest(final Method method) {
@@ -187,34 +227,21 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
      */
     @Override
     public Object createTest() throws Exception {
-        if (delegate != null) {
-            return delegate.createTest();
-        } else {
-            Object test = super.createTest();
-            prepareTest(test);
-            return test;
-        }
+        ensureBootstrappedTestClass();
+
+        Object test = new TestClass(bootstrappedTestClass).getOnlyConstructor().newInstance();
+        prepareTest(test);
+        return test;
     }
 
     public void prepareTest(final Object test) {
     }
 
-    public void setupApplicationState(Method testMethod) {
-        boolean strictI18n = determineI18nStrictState(testMethod);
-
-        ResourceLoader resourceLoader = getResourceLoader(sharedRobolectricContext.getRobolectricConfig());
-        resourceLoader.setLayoutQualifierSearchPath();
-        resourceLoader.setQualifiers(determineResourceQualifiers(testMethod));
-        resourceLoader.setStrictI18n(strictI18n);
-
-        ClassHandler classHandler = sharedRobolectricContext.getClassHandler();
-        classHandler.setStrictI18n(strictI18n);
-
-        Robolectric.application = ShadowApplication.bind(createApplication(), resourceLoader);
-    }
-
     protected void configureShadows(Method testMethod) { // todo: dedupe this/bindShadowClasses
-        Robolectric.bindDefaultShadowClasses();
+        ShadowWrangler shadowWrangler = (ShadowWrangler) sharedRobolectricContext.getClassHandler();
+        for (Class<?> shadowClass : Robolectric.getDefaultShadowClasses()) {
+            shadowWrangler.bindShadowClass(shadowClass);
+        }
         bindShadowClasses(testMethod);
     }
 
@@ -268,7 +295,7 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
      * @param method
      *
      */
-    private boolean determineI18nStrictState(Method method) {
+    private static boolean determineI18nStrictState(Method method) {
     	// Global
     	boolean strictI18n = globalI18nStrictEnabled();
 
@@ -301,7 +328,7 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
      *
      * @return
      */
-    protected boolean globalI18nStrictEnabled() {
+    protected static boolean globalI18nStrictEnabled() {
     	return Boolean.valueOf(System.getProperty("robolectric.strictI18n"));
     }
 

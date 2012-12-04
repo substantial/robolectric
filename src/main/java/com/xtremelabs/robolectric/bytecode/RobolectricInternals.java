@@ -9,6 +9,7 @@ public class RobolectricInternals {
     private static ClassHandler classHandler;
 
     public static ClassHandler getClassHandler() {
+        if (classHandler == null) throw new IllegalStateException("You shouldn't be calling me from uninstrumented code!");
         return classHandler;
     }
 

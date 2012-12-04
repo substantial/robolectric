@@ -17,7 +17,7 @@ import static org.junit.Assert.assertSame;
 public class ThreadSafetyTest {
     @Test
     public void shadowCreationShouldBeThreadsafe() throws Exception {
-        bindShadowClass(InstrumentedThreadShadow.class);
+        getShadowWrangler().bindShadowClass(InstrumentedThreadShadow.class);
         Field field = InstrumentedThread.class.getDeclaredField("shadowFromOtherThread");
         field.setAccessible(true);
 

@@ -4,6 +4,7 @@ import android.R;
 import android.net.Uri__FromAndroid;
 import com.xtremelabs.robolectric.RobolectricConfig;
 import com.xtremelabs.robolectric.RobolectricContext;
+import com.xtremelabs.robolectric.RobolectricTestRunner;
 import com.xtremelabs.robolectric.annotation.DisableStrictI18n;
 import com.xtremelabs.robolectric.annotation.EnableStrictI18n;
 import com.xtremelabs.robolectric.annotation.Values;
@@ -48,6 +49,7 @@ public class Setup {
                 DatabaseConfig.DatabaseMap.class,
                 R.class,
 
+                RobolectricTestRunner.DelegateInterface.class,
                 RobolectricClassLoader.class,
                 RobolectricContext.class,
                 RobolectricContext.Factory.class,

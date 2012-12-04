@@ -23,7 +23,6 @@ import org.junit.runner.RunWith;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
-import static com.xtremelabs.robolectric.Robolectric.bindShadowClass;
 import static com.xtremelabs.robolectric.Robolectric.directlyOn;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.core.StringContains.containsString;
@@ -36,7 +35,7 @@ public class AndroidTranslatorTest {
 
     @Test
     public void testStaticMethodsAreDelegated() throws Exception {
-        bindShadowClass(ShadowAccountManagerForTests.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ShadowAccountManagerForTests.class);
 
         Context context = mock(Context.class);
         AccountManager.get(context);
@@ -58,7 +57,7 @@ public class AndroidTranslatorTest {
 
     @Test
     public void testProtectedMethodsAreDelegated() throws Exception {
-        bindShadowClass(ShadowClassWithProtectedMethod.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ShadowClassWithProtectedMethod.class);
 
         ClassWithProtectedMethod overlay = new ClassWithProtectedMethod();
         assertEquals("shadow name", overlay.getName());
@@ -81,7 +80,7 @@ public class AndroidTranslatorTest {
 
     @Test
     public void testNativeMethodsAreDelegated() throws Exception {
-        bindShadowClass(ShadowPaintForTests.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ShadowPaintForTests.class);
 
         Paint paint = new Paint();
         paint.setColor(1234);
@@ -112,7 +111,7 @@ public class AndroidTranslatorTest {
     @Ignore // todo we need to figure out a better way to deal with this...
     @Test // the shadow will still have its default constructor called; it would be duplicative to call __constructor__() too.
     public void forClassWithNoDefaultConstructor_generatedDefaultConstructorShouldNotCallShadow() throws Exception {
-        bindShadowClass(ShadowForClassWithNoDefaultConstructor.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ShadowForClassWithNoDefaultConstructor.class);
 
         Constructor<ClassWithNoDefaultConstructor> ctor = ClassWithNoDefaultConstructor.class.getDeclaredConstructor();
         ctor.setAccessible(true);
@@ -145,7 +144,7 @@ public class AndroidTranslatorTest {
 
     @Test
     public void directlyOn_shouldCallThroughToOriginalMethodBody() throws Exception {
-        bindShadowClass(Pony.ShadowPony.class);
+        Robolectric.getShadowWrangler().bindShadowClass(Pony.ShadowPony.class);
         Pony pony = new Pony();
 
         assertEquals("Fake whinny! You're on my neck!", pony.ride("neck"));
@@ -156,7 +155,7 @@ public class AndroidTranslatorTest {
 
     @Test
     public void testDirectlyOn_Statics() throws Exception {
-        bindShadowClass(Pony.ShadowPony.class);
+        Robolectric.getShadowWrangler().bindShadowClass(Pony.ShadowPony.class);
 
         assertEquals("I'm shadily prancing to market!", Pony.prance("market"));
         directlyOn(Pony.class);
@@ -167,7 +166,7 @@ public class AndroidTranslatorTest {
 
     @Test
     public void whenShadowHandlerIsInClassicMode_shouldNotCallRealForUnshadowedMethod() throws Exception {
-        bindShadowClass(Pony.ShadowPony.class);
+        Robolectric.getShadowWrangler().bindShadowClass(Pony.ShadowPony.class);
 
         assertEquals(null, new Pony().saunter("the salon"));
     }
@@ -191,7 +190,7 @@ public class AndroidTranslatorTest {
 
     @Test
     public void testDirectlyOn_Statics_InstanceChecking() throws Exception {
-        bindShadowClass(TextViewWithDummyGetTextColorsMethod.class);
+        Robolectric.getShadowWrangler().bindShadowClass(TextViewWithDummyGetTextColorsMethod.class);
         assertNotNull(TextView.getTextColors(null, null)); // the real implementation would asplode
 
         Exception e = null;
@@ -270,7 +269,7 @@ public class AndroidTranslatorTest {
     }
 
     @Test public void withNonApiSubclassesWhichExtendApi_shouldStillBeInvoked() throws Exception {
-        bindShadowClass(ShadowActivity.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ShadowActivity.class);
         assertEquals("did foo", new MyActivity().doSomething("foo"));
     }
 

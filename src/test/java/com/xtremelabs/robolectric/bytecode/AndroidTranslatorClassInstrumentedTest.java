@@ -18,7 +18,7 @@ public class AndroidTranslatorClassInstrumentedTest {
 
     @Test
     public void testNativeMethodsAreDelegated() throws Exception {
-        Robolectric.bindShadowClass(ShadowPaintForTests.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ShadowPaintForTests.class);
 
         Paint paint = new Paint();
         paint.setColor(1234);
@@ -28,7 +28,7 @@ public class AndroidTranslatorClassInstrumentedTest {
 
     @Test
     public void testClassesWithPrivateDefaultConstructorsCanBeShadowed() {
-        Robolectric.bindShadowClass(ShadowClassWithPrivateConstructor.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ShadowClassWithPrivateConstructor.class);
 
         ClassWithPrivateConstructor inst = new ClassWithPrivateConstructor();
         assertThat(inst.getInt(), is(42));
@@ -47,7 +47,7 @@ public class AndroidTranslatorClassInstrumentedTest {
      */
     @Test
     public void testCustomMethodShadowed() throws Exception {
-        Robolectric.bindShadowClass(ShadowCustomPaint.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ShadowCustomPaint.class);
 
         CustomPaint customPaint = new CustomPaint();
         assertThat(customPaint.getColor(), equalTo(10));
@@ -60,7 +60,7 @@ public class AndroidTranslatorClassInstrumentedTest {
      */
     @Test
     public void testCustomMethodNotShadowed() throws Exception {
-        Robolectric.bindShadowClass(ShadowCustomXmasPaint.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ShadowCustomXmasPaint.class);
 
         CustomXmasPaint customXmasPaint = new CustomXmasPaint();
         assertThat(customXmasPaint.getColor(), equalTo(999));

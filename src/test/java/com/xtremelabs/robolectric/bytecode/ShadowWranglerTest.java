@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import static com.xtremelabs.robolectric.Robolectric.bindShadowClass;
 import static com.xtremelabs.robolectric.Robolectric.shadowOf_;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.not;
@@ -33,7 +32,7 @@ public class ShadowWranglerTest {
 
     @Test
     public void testConstructorInvocation_WithDefaultConstructorAndNoConstructorDelegateOnShadowClass() throws Exception {
-        bindShadowClass(ShadowFoo_WithDefaultConstructorAndNoConstructorDelegate.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ShadowFoo_WithDefaultConstructorAndNoConstructorDelegate.class);
 
         Foo foo = new Foo(name);
         assertEquals(ShadowFoo_WithDefaultConstructorAndNoConstructorDelegate.class, shadowOf_(foo).getClass());
@@ -41,7 +40,7 @@ public class ShadowWranglerTest {
 
     @Test
     public void testConstructorInvocation() throws Exception {
-        bindShadowClass(ShadowFoo.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ShadowFoo.class);
 
         Foo foo = new Foo(name);
         assertSame(name, shadowOf(foo).name);
@@ -50,7 +49,7 @@ public class ShadowWranglerTest {
 
     @Test
     public void testRealObjectAnnotatedFieldsAreSetBeforeConstructorIsCalled() throws Exception {
-        bindShadowClass(ShadowFoo.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ShadowFoo.class);
 
         Foo foo = new Foo(name);
         assertSame(name, shadowOf(foo).name);
@@ -62,7 +61,7 @@ public class ShadowWranglerTest {
 
     @Test
     public void testMethodDelegation() throws Exception {
-        bindShadowClass(ShadowFoo.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ShadowFoo.class);
 
         Foo foo = new Foo(name);
         assertSame(name, foo.getName());
@@ -70,7 +69,7 @@ public class ShadowWranglerTest {
 
     @Test
     public void testEqualsMethodDelegation() throws Exception {
-        bindShadowClass(WithEquals.class);
+        Robolectric.getShadowWrangler().bindShadowClass(WithEquals.class);
 
         Foo foo1 = new Foo(name);
         Foo foo2 = new Foo(name);
@@ -79,7 +78,7 @@ public class ShadowWranglerTest {
 
     @Test
     public void testHashCodeMethodDelegation() throws Exception {
-        bindShadowClass(WithEquals.class);
+        Robolectric.getShadowWrangler().bindShadowClass(WithEquals.class);
 
         Foo foo = new Foo(name);
         assertEquals(42, foo.hashCode());
@@ -87,7 +86,7 @@ public class ShadowWranglerTest {
 
     @Test
     public void testToStringMethodDelegation() throws Exception {
-        bindShadowClass(WithToString.class);
+        Robolectric.getShadowWrangler().bindShadowClass(WithToString.class);
 
         Foo foo = new Foo(name);
         assertEquals("the expected string", foo.toString());
@@ -95,7 +94,7 @@ public class ShadowWranglerTest {
 
     @Test
     public void testShadowSelectionSearchesSuperclasses() throws Exception {
-        bindShadowClass(ShadowFoo.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ShadowFoo.class);
 
         TextFoo textFoo = new TextFoo(name);
         assertEquals(ShadowFoo.class, shadowOf_(textFoo).getClass());
@@ -103,8 +102,8 @@ public class ShadowWranglerTest {
 
     @Test
     public void shouldUseMostSpecificShadow() throws Exception {
-        bindShadowClass(ShadowFoo.class);
-        bindShadowClass(ShadowTextFoo.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ShadowFoo.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ShadowTextFoo.class);
 
         TextFoo textFoo = new TextFoo(name);
         assertThat(shadowOf(textFoo), instanceOf(ShadowTextFoo.class));
@@ -123,7 +122,7 @@ public class ShadowWranglerTest {
 
     @Test
     public void shouldRemoveNoiseFromStackTraces() throws Exception {
-        bindShadowClass(ExceptionThrowingShadowFoo.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ExceptionThrowingShadowFoo.class);
         Foo foo = new Foo(null);
 
         Exception e = null;
@@ -154,7 +153,7 @@ public class ShadowWranglerTest {
     @Test(expected = I18nException.class)
     public void shouldThrowExceptionOnI18nStrictMode() {
         Robolectric.getShadowWrangler().setStrictI18n(true);
-        bindShadowClass(ShadowFooI18n.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ShadowFooI18n.class);
         Foo foo = new Foo(null);
         foo.getName();
     }

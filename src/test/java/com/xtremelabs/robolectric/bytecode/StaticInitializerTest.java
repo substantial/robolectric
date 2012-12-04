@@ -1,15 +1,13 @@
 package com.xtremelabs.robolectric.bytecode;
 
+import com.xtremelabs.robolectric.Robolectric;
 import com.xtremelabs.robolectric.TestRunners;
 import com.xtremelabs.robolectric.internal.Implements;
 import com.xtremelabs.robolectric.internal.Instrument;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import static com.xtremelabs.robolectric.Robolectric.bindShadowClass;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @RunWith(TestRunners.WithoutDefaults.class)
 public class StaticInitializerTest {
@@ -24,7 +22,7 @@ public class StaticInitializerTest {
 
     @Test
     public void whenClassHasShadowWithoutOverrideMethod_shouldPerformStaticInitialization() throws Exception {
-        bindShadowClass(ShadowClassWithoutStaticInitializerOverride.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ShadowClassWithoutStaticInitializerOverride.class);
         assertEquals("Floyd", ClassWithStaticInitializerB.name);
 
         AndroidTranslator.performStaticInitialization(ClassWithStaticInitializerB.class);
@@ -39,7 +37,7 @@ public class StaticInitializerTest {
     @Test
     public void whenClassHasShadowWithOverrideMethod_shouldDeferStaticInitialization() throws Exception {
         assertFalse(ShadowClassWithStaticInitializerOverride.initialized);
-        bindShadowClass(ShadowClassWithStaticInitializerOverride.class);
+        Robolectric.getShadowWrangler().bindShadowClass(ShadowClassWithStaticInitializerOverride.class);
         assertEquals(null, ClassWithStaticInitializerC.name);
         assertTrue(ShadowClassWithStaticInitializerOverride.initialized);
 
