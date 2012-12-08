@@ -1,11 +1,13 @@
 package com.xtremelabs.robolectric.bytecode;
 
 import android.net.Uri;
+import com.xtremelabs.robolectric.internal.Implementation;
+import com.xtremelabs.robolectric.internal.Implements;
 import javassist.*;
-import javassist.Modifier;
 
 import java.io.IOException;
-import java.lang.reflect.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 @SuppressWarnings({"UnusedDeclaration"})
 public class AndroidTranslator implements Translator {
@@ -16,7 +18,7 @@ public class AndroidTranslator implements Translator {
     public static final int CACHE_VERSION = 22;
 //    public static final int CACHE_VERSION = -1;
 
-    public static final String CLASS_HANDLER_DATA_FIELD_NAME = "__shadow__"; // todo: rename
+    public static final String CLASS_HANDLER_DATA_FIELD_NAME = "__robo_data__"; // todo: rename
     static final String STATIC_INITIALIZER_METHOD_NAME = "__staticInitializer__";
 
     private final ClassCache classCache;
@@ -71,7 +73,19 @@ public class AndroidTranslator implements Translator {
             throw new IgnorableClassNotFoundException(e);
         }
 
+        if (ctClass.hasAnnotation(Implements.class)) {
+            for (CtMethod ctMethod : ctClass.getDeclaredMethods()) {
+                if (ctMethod.hasAnnotation(Implementation.class)) {
+                    CtMethod copy = CtNewMethod.copy(ctMethod, MethodGenerator.directMethodName(ctClass, ctMethod.getName()), ctClass, MethodGenerator.IDENTITY_CLASS_MAP);
+                    System.out.println("direct access for shadow " + copy.getLongName());
+                    ctClass.addMethod(copy);
+                }
+            }
+            return;
+        }
+
         boolean shouldInstrument = setup.shouldInstrument(ctClass);
+
         if (debug)
             System.out.println("Considering " + ctClass.getName() + ": " + (shouldInstrument ? "INSTRUMENTING" : "not instrumenting"));
 
@@ -98,7 +112,8 @@ public class AndroidTranslator implements Translator {
             }
 
             MethodGenerator methodGenerator = new MethodGenerator(ctClass, setup);
-            methodGenerator.fixConstructors();
+//            methodGenerator.fixConstructors();
+            methodGenerator.createSpecialConstructor();
             methodGenerator.fixMethods();
             methodGenerator.deferClassInitialization();
 

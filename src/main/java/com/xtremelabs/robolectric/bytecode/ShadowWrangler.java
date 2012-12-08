@@ -379,7 +379,12 @@ public class ShadowWrangler implements ClassHandler {
 
             if (instance != null) {
                 shadow = shadowFor(instance);
-                method = getMethod(shadow.getClass(), methodName, paramClasses);
+                String directShadowMethodName = MethodGenerator.directMethodName(declaredShadowClass, methodName);
+
+                method = getMethod(shadow.getClass(), directShadowMethodName, paramClasses);
+                if (method == null) {
+                    method = getMethod(shadow.getClass(), methodName, paramClasses);
+                }
             } else {
                 shadow = null;
                 method = getMethod(findShadowClass(clazz), methodName, paramClasses);

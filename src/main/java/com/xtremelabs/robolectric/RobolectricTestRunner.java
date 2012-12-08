@@ -124,7 +124,6 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
         setupLogging();
         configureShadows(method);
 
-        Robolectric.resetStaticState();
         resetStaticState();
 
         DatabaseConfig.setDatabaseMap(databaseMap); //Set static DatabaseMap in DBConfig
@@ -209,6 +208,7 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
      * Override this method to reset the state of static members before each test.
      */
     protected void resetStaticState() {
+        Robolectric.resetStaticState();
     }
 
     private String determineResourceQualifiers(Method method) {

@@ -96,7 +96,7 @@ public class RobolectricContext {
             classCacheDirectory = new File(classCachePath);
         }
 
-        return new ClassCache(new File(classCacheDirectory, "cached-robolectric-classes.jar").getAbsolutePath(), AndroidTranslator.CACHE_VERSION);
+        return new ZipClassCache(new File(classCacheDirectory, "cached-robolectric-classes.jar").getAbsolutePath(), AndroidTranslator.CACHE_VERSION);
     }
 
     public AndroidTranslator createAndroidTranslator(Setup setup, ClassCache classCache) {

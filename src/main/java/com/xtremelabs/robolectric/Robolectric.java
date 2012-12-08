@@ -449,6 +449,10 @@ public class Robolectric {
         return RobolectricInternals.directlyOn(shadowedObject);
     }
 
+    public static <T> T directlyOn(T shadowedObject, Class<T> clazz) {
+        return RobolectricInternals.directlyOn(shadowedObject, clazz);
+    }
+
     public static ShadowAbsListView shadowOf(AbsListView instance) {
         return (ShadowAbsListView) shadowOf_(instance);
     }
