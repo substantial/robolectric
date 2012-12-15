@@ -18,9 +18,6 @@ public class AndroidTranslator implements Translator {
     public static final int CACHE_VERSION = 22;
 //    public static final int CACHE_VERSION = -1;
 
-    public static final String CLASS_HANDLER_DATA_FIELD_NAME = "__robo_data__"; // todo: rename
-    static final String STATIC_INITIALIZER_METHOD_NAME = "__staticInitializer__";
-
     private final ClassCache classCache;
     private final Setup setup;
 
@@ -29,7 +26,7 @@ public class AndroidTranslator implements Translator {
     public static void performStaticInitialization(Class<?> clazz) {
         if (debug) System.out.println("static initializing " + clazz);
         try {
-            Method originalStaticInitializer = clazz.getDeclaredMethod(STATIC_INITIALIZER_METHOD_NAME);
+            Method originalStaticInitializer = clazz.getDeclaredMethod(InstrumentingClassLoader.STATIC_INITIALIZER_METHOD_NAME);
             originalStaticInitializer.setAccessible(true);
             originalStaticInitializer.invoke(null);
         } catch (NoSuchMethodException e) {
@@ -99,9 +96,9 @@ public class AndroidTranslator implements Translator {
 
             CtClass objectClass = classPool.get(Object.class.getName());
             try {
-                ctClass.getField(CLASS_HANDLER_DATA_FIELD_NAME);
+                ctClass.getField(InstrumentingClassLoader.CLASS_HANDLER_DATA_FIELD_NAME);
             } catch (NotFoundException e1) {
-                CtField field = new CtField(objectClass, CLASS_HANDLER_DATA_FIELD_NAME, ctClass);
+                CtField field = new CtField(objectClass, InstrumentingClassLoader.CLASS_HANDLER_DATA_FIELD_NAME, ctClass);
                 field.setModifiers(java.lang.reflect.Modifier.PUBLIC);
                 ctClass.addField(field);
             }

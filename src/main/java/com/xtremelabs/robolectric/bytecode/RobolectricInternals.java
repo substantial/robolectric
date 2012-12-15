@@ -95,7 +95,7 @@ public class RobolectricInternals {
         Field field = shadowFieldMap.get(clazz);
         if (field == null) {
             try {
-                field = clazz.getField(AndroidTranslator.CLASS_HANDLER_DATA_FIELD_NAME);
+                field = clazz.getField(InstrumentingClassLoader.CLASS_HANDLER_DATA_FIELD_NAME);
             } catch (NoSuchFieldException e) {
                 throw new RuntimeException(instance.getClass().getName() + " has no shadow field", e);
             }

@@ -433,7 +433,7 @@ public class Robolectric {
         Robolectric.application = null;
         ShadowBitmapFactory.reset();
         ShadowDrawable.reset();
-        ShadowMediaStore.reset();
+//        ShadowMediaStore.reset();
         ShadowLog.reset();
         ShadowContext.clearFilesAndCache();
         ShadowLooper.resetThreadLoopers();

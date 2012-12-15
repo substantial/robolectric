@@ -21,31 +21,43 @@ import java.util.*;
 import static java.util.Arrays.asList;
 
 public class Setup {
-    public List<Class<?>> getClassesToDelegateFromRcl() {
-        //noinspection unchecked
-        return asList(
-                Uri__FromAndroid.class,
-                RobolectricTestRunnerInterface.class,
-                RealObject.class,
-                ShadowWrangler.class,
-                Vars.class,
-                AndroidManifest.class,
-                DatabaseConfig.DatabaseMap.class,
-                R.class,
+    public static final List<String> CLASSES_TO_ALWAYS_DELEGATE = stringify(
+            Uri__FromAndroid.class,
+            RobolectricTestRunnerInterface.class,
+            RealObject.class,
+            ShadowWrangler.class,
+            Vars.class,
+            AndroidManifest.class,
+            DatabaseConfig.DatabaseMap.class,
+            R.class,
 
-                RobolectricClassLoader.class,
-                RobolectricContext.class,
-                RobolectricContext.Factory.class,
-                ResourcePath.class,
-                AndroidTranslator.class,
-                ClassHandler.class,
-                Instrument.class,
-                DoNotInstrument.class,
-                Values.class,
-                EnableStrictI18n.class,
-                DisableStrictI18n.class,
-                I18nException.class
-        );
+            InstrumentingClassLoader.class,
+            JavassistInstrumentingClassLoader.class,
+            AsmInstrumentingClassLoader.class,
+            RobolectricContext.class,
+            RobolectricContext.Factory.class,
+            ResourcePath.class,
+            AndroidTranslator.class,
+            ClassHandler.class,
+            Instrument.class,
+            DoNotInstrument.class,
+            Values.class,
+            EnableStrictI18n.class,
+            DisableStrictI18n.class,
+            I18nException.class
+    );
+
+    private static List<String> stringify(Class... classes) {
+        ArrayList<String> strings = new ArrayList<String>();
+        for (Class aClass : classes) {
+            strings.add(aClass.getName());
+        }
+        return strings;
+    }
+
+    public List<String> getClassesToDelegateFromRcl() {
+        //noinspection unchecked
+        return CLASSES_TO_ALWAYS_DELEGATE;
     }
 
 
@@ -63,7 +75,18 @@ public class Setup {
         }
 
         return false;
+    }
 
+    public boolean shouldInstrument(Class clazz) {
+        if (clazz.isInterface() || clazz.isAnnotation() || clazz.getAnnotation(DoNotInstrument.class) != null) {
+            return false;
+        }
+
+        if (isFromAndroidSdk(clazz)) {
+            return true;
+        }
+
+        return false;
     }
 
     public boolean isFromAndroidSdk(CtClass ctClass) {
@@ -91,7 +114,9 @@ public class Setup {
 
     public boolean shouldAcquire(String name) {
         return !(
-                name.startsWith("org.junit")
+                CLASSES_TO_ALWAYS_DELEGATE.contains(name)
+                        || name.startsWith("java.")
+                        || name.startsWith("org.junit")
                         || name.startsWith("org.hamcrest")
                         || name.startsWith("org.specs2") // allows for android projects with mixed scala\java tests to be
                         || name.startsWith("scala.")     //  run with Maven Surefire (see the RoboSpecs project on github)

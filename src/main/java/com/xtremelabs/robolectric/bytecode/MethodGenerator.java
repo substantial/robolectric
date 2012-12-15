@@ -175,7 +175,7 @@ public class MethodGenerator {
             }
 
             CtClass returnCtClass = ctMethod.getReturnType();
-            Type returnType = Type.find(returnCtClass);
+            RoboType returnType = RoboType.find(returnCtClass);
 
             String methodName = ctMethod.getName();
             CtClass[] paramTypes = ctMethod.getParameterTypes();
@@ -224,11 +224,11 @@ public class MethodGenerator {
         return String.format("$$robo$$%s_%04x_%s", ctClass.getSimpleName(), ctClass.getName().hashCode() & 0xffff, methodName);
     }
 
-    public static String directMethodName(Class clazz, String methodName) {
-        String simpleName = clazz.getName();
+    public static String directMethodName(String className, String methodName) {
+        String simpleName = className;
         int lastDotIndex = simpleName.lastIndexOf(".");
         if (lastDotIndex != -1) simpleName = simpleName.substring(lastDotIndex + 1);
-        return String.format("$$robo$$%s_%04x_%s", simpleName, clazz.getName().hashCode() & 0xffff, methodName);
+        return String.format("$$robo$$%s_%04x_%s", simpleName, className.hashCode() & 0xffff, methodName);
     }
 
     public void fixCallsToSameMethodOnSuper(final CtMethod ctMethod) throws CannotCompileException {
@@ -296,7 +296,7 @@ public class MethodGenerator {
         return buf.toString();
     }
 
-    public String generateMethodBody(CtMethod ctMethod, boolean wasNative, boolean wasAbstract, CtClass returnCtClass, Type returnType, boolean aStatic, boolean shouldGenerateCallToSuper) throws NotFoundException {
+    public String generateMethodBody(CtMethod ctMethod, boolean wasNative, boolean wasAbstract, CtClass returnCtClass, RoboType returnType, boolean aStatic, boolean shouldGenerateCallToSuper) throws NotFoundException {
         String methodBody;
         if (wasAbstract) {
             methodBody = returnType.isVoid() ? "" : "return " + returnType.defaultReturnString() + ";";
@@ -310,7 +310,7 @@ public class MethodGenerator {
         return methodBody;
     }
 
-    public String generateMethodBody(CtMethod ctMethod, CtClass returnCtClass, Type returnType, boolean isStatic, boolean shouldGenerateCallToSuper) throws NotFoundException {
+    public String generateMethodBody(CtMethod ctMethod, CtClass returnCtClass, RoboType returnType, boolean isStatic, boolean shouldGenerateCallToSuper) throws NotFoundException {
         boolean returnsVoid = returnType.isVoid();
         String className = ctClass.getName();
 
@@ -340,7 +340,7 @@ public class MethodGenerator {
 
             if (!isStatic) {
                 buf.append(ctClass.getName()).append(".class.isInstance(");
-                buf.append(AndroidTranslator.CLASS_HANDLER_DATA_FIELD_NAME);
+                buf.append(InstrumentingClassLoader.CLASS_HANDLER_DATA_FIELD_NAME);
                 buf.append(") && !");
             }
 
@@ -372,7 +372,7 @@ public class MethodGenerator {
             if (!isStatic) {
                 buf.append("} else {\n  return ((")
                         .append(ctClass.getName())
-                        .append(")" + AndroidTranslator.CLASS_HANDLER_DATA_FIELD_NAME + ").")
+                        .append(")" + InstrumentingClassLoader.CLASS_HANDLER_DATA_FIELD_NAME + ").")
                         .append(directMethodName(ctMethod.getName()))
                         .append("($$);");
             }
@@ -452,9 +452,9 @@ public class MethodGenerator {
         CtConstructor classInitializer = ctClass.getClassInitializer();
         CtMethod staticInitializerMethod;
         if (classInitializer == null) {
-            staticInitializerMethod = CtNewMethod.make(CtClass.voidType, AndroidTranslator.STATIC_INITIALIZER_METHOD_NAME, new CtClass[0], new CtClass[0], "{}", ctClass);
+            staticInitializerMethod = CtNewMethod.make(CtClass.voidType, InstrumentingClassLoader.STATIC_INITIALIZER_METHOD_NAME, new CtClass[0], new CtClass[0], "{}", ctClass);
         } else {
-            staticInitializerMethod = classInitializer.toMethod(AndroidTranslator.STATIC_INITIALIZER_METHOD_NAME, ctClass);
+            staticInitializerMethod = classInitializer.toMethod(InstrumentingClassLoader.STATIC_INITIALIZER_METHOD_NAME, ctClass);
         }
         staticInitializerMethod.setModifiers(Modifier.STATIC | Modifier.PUBLIC);
 
@@ -495,16 +495,16 @@ public class MethodGenerator {
         CtClass directObjectMarkerClass = ctClass.getClassPool().get(DirectObjectMarker.class.getName());
         if (!hasDataField(ctClass.getSuperclass())) {
             ctClass.addConstructor(CtNewConstructor.make(new CtClass[]{directObjectMarkerClass, ctClass}, new CtClass[0],
-                    "{ super(); " + AndroidTranslator.CLASS_HANDLER_DATA_FIELD_NAME + " = $2; }", ctClass));
+                    "{ super(); " + InstrumentingClassLoader.CLASS_HANDLER_DATA_FIELD_NAME + " = $2; }", ctClass));
         } else {
             ctClass.addConstructor(CtNewConstructor.make(new CtClass[]{directObjectMarkerClass, ctClass}, new CtClass[0],
-                    "{ super($$); " + AndroidTranslator.CLASS_HANDLER_DATA_FIELD_NAME + " = $2; }", ctClass));
+                    "{ super($$); " + InstrumentingClassLoader.CLASS_HANDLER_DATA_FIELD_NAME + " = $2; }", ctClass));
         }
     }
 
   private boolean hasDataField(CtClass ctClass) {
     try {
-      ctClass.getField(AndroidTranslator.CLASS_HANDLER_DATA_FIELD_NAME);
+      ctClass.getField(InstrumentingClassLoader.CLASS_HANDLER_DATA_FIELD_NAME);
       return true;
     } catch (NotFoundException e) {
       return false;

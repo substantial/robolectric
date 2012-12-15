@@ -5,7 +5,7 @@ import com.xtremelabs.robolectric.annotation.DisableStrictI18n;
 import com.xtremelabs.robolectric.annotation.EnableStrictI18n;
 import com.xtremelabs.robolectric.annotation.Values;
 import com.xtremelabs.robolectric.bytecode.ClassHandler;
-import com.xtremelabs.robolectric.bytecode.RobolectricClassLoader;
+import com.xtremelabs.robolectric.bytecode.InstrumentingClassLoader;
 import com.xtremelabs.robolectric.internal.RobolectricTestRunnerInterface;
 import com.xtremelabs.robolectric.res.ResourceLoader;
 import com.xtremelabs.robolectric.res.ResourcePath;
@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Installs a {@link RobolectricClassLoader} and {@link com.xtremelabs.robolectric.res.ResourceLoader} in order to
+ * Installs a {@link com.xtremelabs.robolectric.bytecode.JavassistInstrumentingClassLoader} and {@link com.xtremelabs.robolectric.res.ResourceLoader} in order to
  * provide a simulation of the Android runtime environment.
  */
 public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements RobolectricTestRunnerInterface {
@@ -81,7 +81,7 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
     }
 
     protected static boolean isBootstrapped(Class<?> clazz) {
-        return clazz.getClassLoader() instanceof RobolectricClassLoader;
+        return clazz.getClassLoader() instanceof InstrumentingClassLoader;
     }
 
     @Override protected Statement methodBlock(final FrameworkMethod method) {
@@ -397,7 +397,7 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
         return resourceLoader;
     }
 
-    // this method must live on a RobolectricClassLoader-loaded class, so it can't be on RobolectricContext
+    // this method must live on a InstrumentingClassLoader-loaded class, so it can't be on RobolectricContext
     protected ResourceLoader createResourceLoader(List<ResourcePath> resourcePaths) {
         return new ResourceLoader(resourcePaths);
     }

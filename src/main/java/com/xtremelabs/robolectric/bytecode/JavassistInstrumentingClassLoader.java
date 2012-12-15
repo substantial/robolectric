@@ -11,18 +11,17 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.*;
 
-public class RobolectricClassLoader extends javassist.Loader {
+public class JavassistInstrumentingClassLoader extends javassist.Loader implements InstrumentingClassLoader {
     private final Map<String, Class> classes = new HashMap<String, Class>();
     private final ClassCache classCache;
     private final Setup setup;
 
-    public RobolectricClassLoader(ClassLoader classLoader, ClassCache classCache, AndroidTranslator androidTranslator, Setup setup) {
+    public JavassistInstrumentingClassLoader(ClassLoader classLoader, ClassCache classCache, AndroidTranslator androidTranslator, Setup setup) {
         super(classLoader, null);
         this.setup = setup;
 
-        List<Class<?>> classesToDelegate = setup.getClassesToDelegateFromRcl();
-        for (Class<?> aClass : classesToDelegate) {
-            delegateLoadingOf(aClass.getName());
+        for (String className : setup.getClassesToDelegateFromRcl()) {
+            delegateLoadingOf(className);
         }
 
 
@@ -31,8 +30,8 @@ public class RobolectricClassLoader extends javassist.Loader {
             ClassPool classPool = new ClassPool();
             classPool.appendClassPath(new LoaderClassPath(classLoader));
 
-            if (classLoader != RobolectricClassLoader.class.getClassLoader()) {
-                classPool.appendClassPath(new LoaderClassPath(RobolectricClassLoader.class.getClassLoader()));
+            if (classLoader != JavassistInstrumentingClassLoader.class.getClassLoader()) {
+                classPool.appendClassPath(new LoaderClassPath(JavassistInstrumentingClassLoader.class.getClassLoader()));
             }
 
             addTranslator(classPool, androidTranslator);
@@ -98,20 +97,20 @@ public class RobolectricClassLoader extends javassist.Loader {
     public URL getResource(String s) {
         URL resource = super.getResource(s);
         if (resource != null) return resource;
-        return RobolectricClassLoader.class.getClassLoader().getResource(s);
+        return JavassistInstrumentingClassLoader.class.getClassLoader().getResource(s);
     }
 
     @Override
     public InputStream getResourceAsStream(String s) {
         InputStream resourceAsStream = super.getResourceAsStream(s);
         if (resourceAsStream != null) return resourceAsStream;
-        return RobolectricClassLoader.class.getClassLoader().getResourceAsStream(s);
+        return JavassistInstrumentingClassLoader.class.getClassLoader().getResourceAsStream(s);
     }
 
     @Override
     public Enumeration<URL> getResources(String s) throws IOException {
         List<URL> resources = Collections.list(super.getResources(s));
         if (!resources.isEmpty()) return Collections.enumeration(resources);
-        return RobolectricClassLoader.class.getClassLoader().getResources(s);
+        return JavassistInstrumentingClassLoader.class.getClassLoader().getResources(s);
     }
 }

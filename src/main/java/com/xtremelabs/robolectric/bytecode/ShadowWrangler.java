@@ -43,7 +43,7 @@ public class ShadowWrangler implements ClassHandler {
         Class<?> shadowClass = findDirectShadowClass(clazz);
         if (shadowClass != null) {
             try {
-                Method method = shadowClass.getMethod(AndroidTranslator.STATIC_INITIALIZER_METHOD_NAME);
+                Method method = shadowClass.getMethod(InstrumentingClassLoader.STATIC_INITIALIZER_METHOD_NAME);
                 if (!Modifier.isStatic(method.getModifiers())) {
                     throw new RuntimeException(shadowClass.getName() + "." + method.getName() + " is not static");
                 }
@@ -161,7 +161,7 @@ public class ShadowWrangler implements ClassHandler {
     }
 
     public static Class<?> loadClass(String paramType, ClassLoader classLoader) {
-        Class primitiveClass = Type.findPrimitiveClass(paramType);
+        Class primitiveClass = RoboType.findPrimitiveClass(paramType);
         if (primitiveClass != null) return primitiveClass;
 
         int arrayLevel = 0;
@@ -170,7 +170,7 @@ public class ShadowWrangler implements ClassHandler {
             paramType = paramType.substring(0, paramType.length() - 2);
         }
 
-        Class<?> clazz = Type.findPrimitiveClass(paramType);
+        Class<?> clazz = RoboType.findPrimitiveClass(paramType);
         if (clazz == null) {
             try {
                 clazz = classLoader.loadClass(paramType);
@@ -374,12 +374,12 @@ public class ShadowWrangler implements ClassHandler {
             }
 
             if (methodName.equals("<init>")) {
-                methodName = "__constructor__";
+                methodName = InstrumentingClassLoader.CONSTRUCTOR_METHOD_NAME;
             }
 
             if (instance != null) {
                 shadow = shadowFor(instance);
-                String directShadowMethodName = MethodGenerator.directMethodName(declaredShadowClass, methodName);
+                String directShadowMethodName = MethodGenerator.directMethodName(declaredShadowClass.getName(), methodName);
 
                 method = getMethod(shadow.getClass(), directShadowMethodName, paramClasses);
                 if (method == null) {
