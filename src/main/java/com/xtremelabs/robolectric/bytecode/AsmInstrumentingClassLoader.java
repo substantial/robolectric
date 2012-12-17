@@ -1,10 +1,20 @@
 package com.xtremelabs.robolectric.bytecode;
 
 
-import org.objectweb.asm.*;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
-import org.objectweb.asm.tree.*;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.util.TraceClassVisitor;
 
 import java.io.ByteArrayOutputStream;
@@ -12,7 +22,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
 
 import static org.objectweb.asm.Type.getType;
 
@@ -80,32 +94,43 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
         ClassNode classNode = new ClassNode();
         classReader.accept(classNode, 0);
 
+        boolean foundDefaultConstructor = false;
         List<MethodNode> methods = new ArrayList<MethodNode>(classNode.methods);
         for (MethodNode method : methods) {
             String originalName = method.name;
-            if (!method.name.startsWith("<")) {
-                String directName = MethodGenerator.directMethodName(className, method.name);
-                method.name = directName;
-                classNode.methods.add(generateInstrumentedMethod(className, method, originalName));
-            } else if (method.name.equals("<init>")) {
+            if (method.name.equals("<init>")) {
+                if (method.desc.equals("()V")) foundDefaultConstructor = true;
+
+                method.access |= ACC_PUBLIC;
                 convertConstructorToRegularMethod(method);
                 method.name = CONSTRUCTOR_METHOD_NAME;
-                classNode.methods.add(generateConstructorMethod(className, method));
+                classNode.methods.add(generateConstructorMethod(classNode, method));
             } else if (method.name.equals("<clinit>")) {
-                System.out.println("originalName = " + originalName);
-                convertConstructorToRegularMethod(method);
                 method.name = STATIC_INITIALIZER_METHOD_NAME;
                 classNode.methods.add(generateStaticInitializerNotifierMethod(className));
+            } else {
+                method.name = MethodGenerator.directMethodName(className, method.name);
+                classNode.methods.add(generateInstrumentedMethod(className, method, originalName));
             }
         }
 
-        classNode.fields.add(new FieldNode(Modifier.PUBLIC, CLASS_HANDLER_DATA_FIELD_NAME, OBJECT_DESC, OBJECT_DESC, null));
+        classNode.fields.add(new FieldNode(ACC_PUBLIC, CLASS_HANDLER_DATA_FIELD_NAME, OBJECT_DESC, OBJECT_DESC, null));
+
+        if (!foundDefaultConstructor) {
+            MethodNode defaultConstructor = new MethodNode(ACC_PUBLIC, "<init>", "()V", "()V", null);
+            MyGenerator m = new MyGenerator(defaultConstructor);
+            m.loadThis();
+            m.visitMethodInsn(INVOKESPECIAL, classNode.superName, "<init>", "()V");
+            m.returnValue();
+            m.endMethod();
+            classNode.methods.add(defaultConstructor);
+        }
 
         ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         classNode.accept(classWriter);
 
         byte[] classBytes = classWriter.toByteArray();
-        if (debug || className.equals("android.webkit.TestWebSettingsTest")) {
+        if (debug || className.contains("Example")) {
             new ClassReader(classBytes).accept(new TraceClassVisitor(new PrintWriter(System.out)), 0);
         }
         return classBytes;
@@ -133,7 +158,7 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
                 MethodInsnNode mnode = (MethodInsnNode) node;
 //                assert mnode.owner.equals(methodNo.superName);
                 assert mnode.name.equals("<init>");
-                assert mnode.desc.equals(cons.desc);
+//                assert mnode.desc.equals(cons.desc);
 
                 li.remove();
                 return;
@@ -146,26 +171,23 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
     private MethodNode generateInstrumentedMethod(String className, MethodNode directMethod, String originalName) {
         String[] exceptions = ((List<String>) directMethod.exceptions).toArray(new String[directMethod.exceptions.size()]);
         MethodNode methodNode = new MethodNode(directMethod.access, originalName, directMethod.desc, directMethod.signature, exceptions);
-        methodNode.access &= ~(Modifier.NATIVE | Modifier.ABSTRACT);
+        methodNode.access &= ~(ACC_NATIVE | ACC_ABSTRACT);
 
-        MyGeneratorAdapter m = new MyGeneratorAdapter(methodNode, directMethod, originalName);
+        MyGenerator m = new MyGenerator(methodNode);
         String classRef = classRef(className);
         Type classType = getType(classRef);
-        Type returnType = Type.getReturnType(directMethod.desc);
 
         Label callDirect = new Label();
         Label callClassHandler = new Label();
 
-        m.visitCode();
-
         if (!m.isStatic) {
             m.loadThis();                                         // this
-            m.getField(classType, "__robo_data__", OBJECT_TYPE);   // contents of __robo_data__
+            m.getField(classType, "__robo_data__", OBJECT_TYPE);  // contents of __robo_data__
             m.instanceOf(classType);                              // is instance of same class?
             m.visitJumpInsn(IFNE, callDirect); // jump if yes (is instance)
         }
 
-        m.loadThisOrNot();                                        // this
+        m.loadThisOrNull();                                       // this
         m.invokeStatic(ROBOLECTRIC_INTERNALS_TYPE, new Method("shouldCallDirectly", "(Ljava/lang/Object;)Z"));
         // args, should call directly?
         m.visitJumpInsn(IFEQ, callClassHandler); // jump if no (should not call directly)
@@ -174,20 +196,58 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
         m.mark(callDirect);
 
         // call direct method and return
-        m.loadThisOrNot();                                        // this
+        m.loadThisOrNull();                                       // this
         m.loadArgs();                                             // this, [args]
         m.visitMethodInsn(INVOKESPECIAL, classRef, originalName, directMethod.desc);
         m.returnValue();
 
         // callClassHandler...
         m.mark(callClassHandler);
+        generateCallToClassHandler(directMethod, originalName, m);
 
+        m.unbox(m.getReturnType());
+        m.returnValue();
+
+        m.endMethod();
+
+        return methodNode;
+    }
+
+    private MethodNode generateStaticInitializerNotifierMethod(String className) {
+        MethodNode methodNode = new MethodNode(ACC_STATIC, "<clinit>", "()V", "()V", null);
+        MyGenerator m = new MyGenerator(methodNode);
+        m.push(Type.getObjectType(classRef(className)));
+        m.invokeStatic(Type.getType(RobolectricInternals.class), new Method("classInitializing", "(Ljava/lang/Class;)V"));
+        m.returnValue();
+        m.endMethod();
+        return methodNode;
+    }
+
+    private MethodNode generateConstructorMethod(ClassNode classNode, MethodNode directMethod) {
+        String[] exceptions = ((List<String>) directMethod.exceptions).toArray(new String[directMethod.exceptions.size()]);
+        MethodNode methodNode = new MethodNode(directMethod.access, "<init>", directMethod.desc, directMethod.signature, exceptions);
+        MyGenerator m = new MyGenerator(methodNode);
+
+        // call super()
+        m.loadThis();                                             // this
+        m.visitMethodInsn(INVOKESPECIAL, classNode.superName, "<init>", "()V");
+
+        generateCallToClassHandler(directMethod, "__constructor__", m);
+
+        m.unbox(m.getReturnType());
+        m.returnValue();
+
+        m.endMethod();
+        return methodNode;
+    }
+
+    private void generateCallToClassHandler(MethodNode directMethod, String originalMethodName, MyGenerator m) {
         // prepare for call to classHandler.methodInvoked()
-        m.loadThisOrNot();                                        // this
+        m.loadThisOrNull();                                       // this
         m.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Object", "getClass", "()Ljava/lang/Class;");
         // my class
-        m.push(originalName);                                     // my class, method name
-        m.loadThisOrNot();                                        // my class, method name, this
+        m.push(originalMethodName);                                     // my class, method name
+        m.loadThisOrNull();                                       // my class, method name, this
 //
 //            // load param types
         Type[] argumentTypes = Type.getArgumentTypes(directMethod.desc);
@@ -205,56 +265,6 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
         m.loadArgArray();
 
         m.invokeStatic(ROBOLECTRIC_INTERNALS_TYPE, new Method("methodInvoked", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Object;[Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;"));
-        m.unbox(returnType);
-        m.returnValue();
-
-        m.endMethod();
-
-        return methodNode;
-    }
-
-    private MethodNode generateStaticInitializerNotifierMethod(String className) {
-        MethodNode methodNode = new MethodNode(Modifier.STATIC, "<clinit>", "()V", "()V", null);
-        GeneratorAdapter m = new GeneratorAdapter(methodNode, Modifier.STATIC, "<clinit>", "()V");
-        m.visitCode();
-        m.push(Type.getObjectType(classRef(className)));
-        m.invokeStatic(Type.getType(RobolectricInternals.class), new Method("classInitializing", "(Ljava/lang/Class;)V"));
-        m.returnValue();
-        m.endMethod();
-        return methodNode;
-    }
-
-    private MethodNode generateConstructorMethod(String className, MethodNode directMethod) {
-        String[] exceptions = ((List<String>) directMethod.exceptions).toArray(new String[directMethod.exceptions.size()]);
-        MethodNode methodNode = new MethodNode(directMethod.access, "<init>", directMethod.desc, directMethod.signature, exceptions);
-        MyGeneratorAdapter m = new MyGeneratorAdapter(methodNode, directMethod, "<init>");
-        // prepare for call to classHandler.methodInvoked()
-//        m.loadThis();                                             // this
-//        m.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Object", "getClass", "()Ljava/lang/Class;");
-//        // my class
-//        m.push(CONSTRUCTOR_METHOD_NAME);                          // my class, method name
-//        m.loadThis();                                             // my class, method name, this
-////
-////            // load param types
-//        Type[] argumentTypes = Type.getArgumentTypes(directMethod.desc);
-//        m.push(argumentTypes.length);
-//        m.newArray(STRING_TYPE);                                  // my class, method name, this, String[n]{nulls}
-//        for (int i = 0; i < argumentTypes.length; i++) {
-//            Type argumentType = argumentTypes[i];
-//            m.dup();
-//            m.push(i);
-//            m.push(argumentType.getClassName());
-//            m.arrayStore(STRING_TYPE);
-//        }
-//        // my class, method name, this, String[n]{param class names}
-//
-//        m.loadArgArray();
-//
-//        m.invokeStatic(ROBOLECTRIC_INTERNALS_TYPE, new Method("methodInvoked", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Object;[Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;"));
-        m.returnValue();
-
-        m.endMethod();
-        return methodNode;
     }
 
     private String classRef(String className) {
@@ -270,15 +280,17 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
         return baos.toByteArray();
     }
 
-    private static class MyGeneratorAdapter extends GeneratorAdapter {
+    private static class MyGenerator extends GeneratorAdapter {
         private final boolean isStatic;
+        private final String desc;
 
-        public MyGeneratorAdapter(MethodNode methodNode, MethodNode directMethod, String originalName) {
-            super(methodNode, directMethod.access, originalName, directMethod.desc);
-            this.isStatic = Modifier.isStatic(directMethod.access);
+        public MyGenerator(MethodNode methodNode) {
+            super(Opcodes.ASM4, methodNode, methodNode.access, methodNode.name, methodNode.desc);
+            this.isStatic = Modifier.isStatic(methodNode.access);
+            this.desc = methodNode.desc;
         }
 
-        public void loadThisOrNot() {
+        public void loadThisOrNull() {
             if (isStatic) {
                 loadNull();
             } else {
@@ -290,8 +302,12 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
             return isStatic;
         }
 
-        private void loadNull() {
+        public void loadNull() {
             visitInsn(ACONST_NULL);
+        }
+
+        public Type getReturnType() {
+            return Type.getReturnType(desc);
         }
     }
 }

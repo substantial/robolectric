@@ -2,28 +2,35 @@ package com.xtremelabs.robolectric.bytecode;
 
 import com.xtremelabs.robolectric.internal.Instrument;
 import com.xtremelabs.robolectric.util.Transcript;
-import javassist.*;
+import javassist.CannotCompileException;
+import javassist.ClassClassPath;
+import javassist.ClassPool;
+import javassist.Loader;
+import javassist.NotFoundException;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 import static org.junit.Assert.*;
 
 public class InstrumentingClassLoaderTest {
 
-    private Transcript transcript = new Transcript();
-    private Class<?> exampleClass;
+    private ClassLoader classLoader;
     private MyClassHandler classHandler;
+    private Class<?> exampleClass;
+    private Transcript transcript = new Transcript();
 
     @Before
     public void setUp() throws Exception {
 //        transformWithJavassist();
-        ClassLoader classLoader = transformWithAsm();
+        classLoader = transformWithAsm();
         classHandler = new MyClassHandler(transcript);
         injectClassHandler(classLoader, classHandler);
-        exampleClass = classLoader.loadClass(ExampleClass.class.getName());
+        exampleClass = loadClass(ExampleClass.class);
     }
 
     private ClassLoader transformWithJavassist() throws NotFoundException, CannotCompileException, ClassNotFoundException {
@@ -38,6 +45,36 @@ public class InstrumentingClassLoaderTest {
 
     private ClassLoader transformWithAsm() throws ClassNotFoundException {
         return new AsmInstrumentingClassLoader(new Setup(), getClass().getClassLoader());
+    }
+
+    @Test public void shouldAddDefaultConstructorIfMissing() throws Exception {
+        Constructor<?> defaultCtor = loadClass(ClassWithNoDefaultConstructor.class).getConstructor();
+        assertTrue(Modifier.isPublic(defaultCtor.getModifiers()));
+        defaultCtor.setAccessible(true);
+        defaultCtor.newInstance();
+        transcript.assertNoEventsSoFar();
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    @Instrument static class ClassWithNoDefaultConstructor {
+        private String name;
+
+        ClassWithNoDefaultConstructor(String name) {
+            this.name = name;
+        }
+    }
+
+    @Test public void shouldDelegateToHandlerForConstructors() throws Exception {
+        Class<?> clazz = loadClass(ClassWithNoDefaultConstructor.class);
+        Constructor<?> ctor = clazz.getDeclaredConstructor(String.class);
+        assertTrue(Modifier.isPublic(ctor.getModifiers()));
+        ctor.setAccessible(true);
+        Object instance = ctor.newInstance("new one");
+        transcript.assertEventsSoFar("methodInvoked: ClassWithNoDefaultConstructor.__constructor__(java.lang.String new one)");
+
+        Field nameField = clazz.getDeclaredField("name");
+        nameField.setAccessible(true);
+        assertNull(nameField.get(instance));
     }
 
     @Test public void shouldDelegateClassLoadForUnacquiredClasses() throws Exception {
@@ -68,13 +105,11 @@ public class InstrumentingClassLoaderTest {
     @Test
     public void callingNormalMethodShouldInvokeClassHandler() throws Exception {
         Method normalMethod = exampleClass.getMethod("normalMethod", String.class, int.class);
-//        assertEquals(Modifiers.PUBLIC, normalMethod.getModifiers());
 
-//        RobolectricInternals.directlyOn(shadowedObject)
         Object exampleInstance = exampleClass.newInstance();
         assertEquals("response from methodInvoked: ExampleClass.normalMethod(java.lang.String value1, int 123)",
                 normalMethod.invoke(exampleInstance, "value1", 123));
-        transcript.assertEventsSoFar(/*"methodInvoked: ExampleClass.__constructor__()",*/
+        transcript.assertEventsSoFar("methodInvoked: ExampleClass.__constructor__()",
                 "methodInvoked: ExampleClass.normalMethod(java.lang.String value1, int 123)");
     }
 
@@ -83,22 +118,27 @@ public class InstrumentingClassLoaderTest {
         classHandler.valueToReturn = 456;
 
         Method normalMethod = exampleClass.getMethod("normalMethodReturningPrimitive", int.class);
-//        assertEquals(Modifiers.PUBLIC, normalMethod.getModifiers());
-
-//        RobolectricInternals.directlyOn(shadowedObject)
         Object exampleInstance = exampleClass.newInstance();
-        assertEquals(456,
-                normalMethod.invoke(exampleInstance, 123));
-        transcript.assertEventsSoFar(/*"methodInvoked: ExampleClass.__constructor__()",*/
+        assertEquals(456, normalMethod.invoke(exampleInstance, 123));
+        transcript.assertEventsSoFar("methodInvoked: ExampleClass.__constructor__()",
                 "methodInvoked: ExampleClass.normalMethodReturningPrimitive(int 123)");
+    }
+
+    @Test
+    public void callingNativeMethodShouldInvokeClassHandler() throws Exception {
+        Method normalMethod = exampleClass.getDeclaredMethod("nativeMethod", String.class, int.class);
+        Object exampleInstance = exampleClass.newInstance();
+        assertEquals("response from methodInvoked: ExampleClass.nativeMethod(java.lang.String value1, int 123)",
+                normalMethod.invoke(exampleInstance, "value1", 123));
+        transcript.assertEventsSoFar("methodInvoked: ExampleClass.__constructor__()",
+                "methodInvoked: ExampleClass.nativeMethod(java.lang.String value1, int 123)");
     }
 
     @Test public void shouldGenerateClassSpecificDirectAccessMethod() throws Exception {
         Method directMethod = exampleClass.getMethod("$$robo$$InstrumentingClassLoaderTest$ExampleClass_d501_normalMethod", String.class, int.class);
-
         Object exampleInstance = exampleClass.newInstance();
         assertEquals("normalMethod(value1, 123)", directMethod.invoke(exampleInstance, "value1", 123));
-        transcript.assertEventsSoFar(/*"methodInvoked: ExampleClass.__constructor__()"*/);
+        transcript.assertEventsSoFar("methodInvoked: ExampleClass.__constructor__()");
     }
 
     private static void injectClassHandler(ClassLoader classLoader, ClassHandler classHandler) {
@@ -113,6 +153,22 @@ public class InstrumentingClassLoaderTest {
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    @Instrument
+    public static class ExampleClass {
+        public String normalMethod(String stringArg, int intArg) {
+            return "normalMethod(" + stringArg + ", " + intArg + ")";
+        }
+
+        public int normalMethodReturningPrimitive(int intArg) {
+            return intArg + 1;
+        }
+
+        public native String nativeMethod(String stringArg, int intArg);
+
+        //        abstract void abstractMethod(); todo
     }
 
     public static class MyClassHandler implements ClassHandler {
@@ -156,22 +212,6 @@ public class InstrumentingClassLoaderTest {
         }
     }
 
-    @SuppressWarnings("UnusedDeclaration")
-    @Instrument
-    public static class ExampleClass {
-        public String normalMethod(String stringArg, int intArg) {
-            return "normalMethod(" + stringArg + ", " + intArg + ")";
-        }
-
-        public int normalMethodReturningPrimitive(int intArg) {
-            return intArg + 1;
-        }
-
-        private native void privateNativeMethod();
-
-    //        abstract void abstractMethod(); todo
-    }
-
     private static class MySetup extends Setup {
         private final boolean shouldAcquire;
         private final boolean shouldInstrument;
@@ -190,5 +230,9 @@ public class InstrumentingClassLoaderTest {
         public boolean shouldInstrument(Class clazz) {
             return shouldInstrument && clazz.equals(ExampleClass.class);
         }
+    }
+
+    private Class<?> loadClass(Class<?> clazz) throws ClassNotFoundException {
+        return classLoader.loadClass(clazz.getName());
     }
 }
