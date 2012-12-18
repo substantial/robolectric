@@ -1,7 +1,6 @@
 package com.xtremelabs.robolectric.res;
 
 import android.content.Context;
-import android.text.TextUtils;
 import android.view.Menu;
 import android.view.SubMenu;
 import com.xtremelabs.robolectric.tester.android.util.Attribute;
@@ -84,8 +83,11 @@ public class MenuLoader extends XmlLoader {
     }
 
     private static boolean childToIgnore(Node nodei) {
-        return TextUtils.isEmpty(nodei.getNodeName())
-                || nodei.getNodeName().startsWith("#");
+        return isEmpty(nodei.getNodeName()) || nodei.getNodeName().startsWith("#");
+    }
+
+    public static boolean isEmpty(CharSequence str) {
+        return str == null || str.length() == 0;
     }
 
     private static boolean validChildren(Node nodei) {

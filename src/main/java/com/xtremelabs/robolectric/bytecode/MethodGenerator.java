@@ -224,13 +224,6 @@ public class MethodGenerator {
         return String.format("$$robo$$%s_%04x_%s", ctClass.getSimpleName(), ctClass.getName().hashCode() & 0xffff, methodName);
     }
 
-    public static String directMethodName(String className, String methodName) {
-        String simpleName = className;
-        int lastDotIndex = simpleName.lastIndexOf(".");
-        if (lastDotIndex != -1) simpleName = simpleName.substring(lastDotIndex + 1);
-        return String.format("$$robo$$%s_%04x_%s", simpleName, className.hashCode() & 0xffff, methodName);
-    }
-
     public void fixCallsToSameMethodOnSuper(final CtMethod ctMethod) throws CannotCompileException {
         ctMethod.instrument(new ExprEditor() {
             @Override

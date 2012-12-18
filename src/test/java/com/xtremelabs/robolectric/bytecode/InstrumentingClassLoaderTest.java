@@ -1,5 +1,6 @@
 package com.xtremelabs.robolectric.bytecode;
 
+import com.xtremelabs.robolectric.internal.DoNotInstrument;
 import com.xtremelabs.robolectric.internal.Instrument;
 import com.xtremelabs.robolectric.util.Transcript;
 import javassist.CannotCompileException;
@@ -135,7 +136,9 @@ public class InstrumentingClassLoaderTest {
     }
 
     @Test public void shouldGenerateClassSpecificDirectAccessMethod() throws Exception {
-        Method directMethod = exampleClass.getMethod("$$robo$$InstrumentingClassLoaderTest$ExampleClass_d501_normalMethod", String.class, int.class);
+        String methodName = RobolectricInternals.directMethodName(ExampleClass.class.getName(), "normalMethod");
+        Method directMethod = exampleClass.getDeclaredMethod(methodName, String.class, int.class);
+        directMethod.setAccessible(true);
         Object exampleInstance = exampleClass.newInstance();
         assertEquals("normalMethod(value1, 123)", directMethod.invoke(exampleInstance, "value1", 123));
         transcript.assertEventsSoFar("methodInvoked: ExampleClass.__constructor__()");
@@ -158,6 +161,8 @@ public class InstrumentingClassLoaderTest {
     @SuppressWarnings("UnusedDeclaration")
     @Instrument
     public static class ExampleClass {
+        static int foo = 123;
+
         public String normalMethod(String stringArg, int intArg) {
             return "normalMethod(" + stringArg + ", " + intArg + ")";
         }
@@ -169,6 +174,52 @@ public class InstrumentingClassLoaderTest {
         public native String nativeMethod(String stringArg, int intArg);
 
         //        abstract void abstractMethod(); todo
+    }
+
+    @Test public void shouldInvokeShadowForEachConstructorInInheritanceTree() throws Exception {
+        loadClass(Child.class).newInstance();
+        transcript.assertEventsSoFar(
+                "methodInvoked: Grandparent.__constructor__()",
+                "methodInvoked: Parent.__constructor__()",
+                "methodInvoked: Child.__constructor__()");
+    }
+
+    @Instrument
+    public static class Child extends Parent {
+    }
+
+    @Instrument
+    public static class Parent extends Grandparent {
+    }
+
+    @Instrument
+    public static class Grandparent {
+    }
+
+    @Test public void shouldRetainSuperCallInConstructor() throws Exception {
+        Class<?> aClass = loadClass(InstrumentedChild.class);
+        Object o = aClass.getDeclaredConstructor(String.class).newInstance("hortense");
+        assertEquals("HORTENSE", aClass.getSuperclass().getDeclaredField("parentName").get(o));
+        assertNull(aClass.getDeclaredField("childName").get(o));
+    }
+
+    @Instrument
+    public static class InstrumentedChild extends UninstrumentedParent {
+        public final String childName;
+
+        public InstrumentedChild(String name) {
+            super(name.toUpperCase());
+            this.childName = name;
+        }
+    }
+
+    @DoNotInstrument
+    public static class UninstrumentedParent {
+        public final String parentName;
+
+        public UninstrumentedParent(String name) {
+            this.parentName = name;
+        }
     }
 
     public static class MyClassHandler implements ClassHandler {
@@ -193,7 +244,7 @@ public class InstrumentingClassLoaderTest {
             buf.append("methodInvoked: ").append(clazz.getSimpleName()).append(".").append(methodName).append("(");
             for (int i = 0; i < paramTypes.length; i++) {
                 if (i > 0) buf.append(", ");
-                buf.append(paramTypes[i]).append(" ").append(params[i].toString());
+                buf.append(paramTypes[i]).append(" ").append(params[i]);
             }
             buf.append(")");
             transcript.add(buf.toString());

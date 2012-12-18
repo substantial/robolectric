@@ -78,7 +78,8 @@ public class RealApisSuperHandlingTest {
     public static class GrandparentShadow {
         private @RealObject Grandparent realObject;
 
-        public void __constructor__() {} // todo we need to figure out a better way to deal with this...
+        @SuppressWarnings("UnusedDeclaration")
+        private void __constructor__() {} // todo we need to figure out a better way to deal with this...
 
         @Implementation public String method(String value) {
             return "1s-" + directlyOn(realObject, Grandparent.class).method(value);
@@ -107,7 +108,7 @@ public class RealApisSuperHandlingTest {
     }
 
     @Instrument
-    private static class Grandparent {
+    public static class Grandparent {
         public String method(String value) {
             return "1-" + value;
         }

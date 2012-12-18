@@ -242,14 +242,12 @@ public class RobolectricContext {
             @Override
             public URL getResource(String s) {
                 URL resource = super.getResource(s);
-                System.out.println("load Resource " + s + ": " + resource);
                 if (resource != null) return resource;
                 return parentClassLoader.getResource(s);
             }
 
             @Override
             public InputStream getResourceAsStream(String s) {
-                System.out.println("load ResourceAsStream " + s);
                 InputStream resourceAsStream = super.getResourceAsStream(s);
                 if (resourceAsStream != null) return resourceAsStream;
                 return parentClassLoader.getResourceAsStream(s);
@@ -257,7 +255,6 @@ public class RobolectricContext {
 
             @Override
             public Enumeration<URL> getResources(String s) throws IOException {
-                System.out.println("load Resources " + s);
                 List<URL> resources = Collections.list(super.getResources(s));
                 if (!resources.isEmpty()) return Collections.enumeration(resources);
                 return parentClassLoader.getResources(s);

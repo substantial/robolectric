@@ -172,4 +172,15 @@ public class RobolectricInternals {
     public static Object autobox(double o) {
         return o;
     }
+
+    public static String directMethodName(String methodName) {
+        return String.format("$$robo$$%s", methodName);
+    }
+
+    public static String directMethodName(String className, String methodName) {
+        String simpleName = className;
+        int lastDotIndex = simpleName.lastIndexOf(".");
+        if (lastDotIndex != -1) simpleName = simpleName.substring(lastDotIndex + 1);
+        return String.format("$$robo$$%s_%04x_%s", simpleName, className.hashCode() & 0xffff, methodName);
+    }
 }

@@ -44,7 +44,8 @@ public class Setup {
             Values.class,
             EnableStrictI18n.class,
             DisableStrictI18n.class,
-            I18nException.class
+            I18nException.class,
+            DirectObjectMarker.class
     );
 
     private static List<String> stringify(Class... classes) {
@@ -116,6 +117,11 @@ public class Setup {
         return !(
                 CLASSES_TO_ALWAYS_DELEGATE.contains(name)
                         || name.startsWith("java.")
+                        || name.startsWith("javax.")
+                        || name.startsWith("sun.")
+                        || name.startsWith("com.sun.")
+                        || name.startsWith("org.w3c.")
+                        || name.startsWith("org.xml.")
                         || name.startsWith("org.junit")
                         || name.startsWith("org.hamcrest")
                         || name.startsWith("org.specs2") // allows for android projects with mixed scala\java tests to be
