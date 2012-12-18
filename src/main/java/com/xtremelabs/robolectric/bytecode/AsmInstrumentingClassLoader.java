@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
-import static org.objectweb.asm.Type.getType;
+import static org.objectweb.asm.Type.*;
 
 public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes, InstrumentingClassLoader {
     private static final String OBJECT_DESC = Type.getDescriptor(Object.class);
@@ -35,7 +35,7 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
     private static final Type STRING_TYPE = getType(String.class);
     private static final Type ROBOLECTRIC_INTERNALS_TYPE = Type.getType(RobolectricInternals.class);
 
-    private static boolean debug = false;
+    private static boolean debug = true;
 
     private final Setup setup;
     private final Map<String, Class> classes = new HashMap<String, Class>();
@@ -235,8 +235,6 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
             methodNode.instructions = removedInstructions;
 
             generateCallToClassHandler(method, CONSTRUCTOR_METHOD_NAME, m);
-
-            m.unbox(m.getReturnType());
             m.returnValue();
 
             m.endMethod();
@@ -339,8 +337,6 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
             // callClassHandler...
             m.mark(callClassHandler);
             generateCallToClassHandler(method, originalName, m);
-
-            m.unbox(m.getReturnType());
             m.returnValue();
 
             m.endMethod();
@@ -399,6 +395,18 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
             m.loadArgArray();
 
             m.invokeStatic(ROBOLECTRIC_INTERNALS_TYPE, new Method("methodInvoked", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Object;[Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;"));
+
+            Type returnType = m.getReturnType();
+            int sort = returnType.getSort();
+            if (sort != VOID && sort != OBJECT && sort != ARRAY) {
+                Label notNull = m.newLabel();
+                m.dup();
+                m.ifNonNull(notNull);
+                m.visitInsn(Opcodes.ICONST_0);
+                m.box(returnType);
+                m.visitLabel(notNull);
+            }
+            m.unbox(returnType);
         }
     }
 }

@@ -126,6 +126,17 @@ public class InstrumentingClassLoaderTest {
     }
 
     @Test
+    public void whenClassHandlerReturnsNull_callingNormalMethodReturningPrimitiveShouldWork() throws Exception {
+        classHandler.valueToReturn = null;
+
+        Method normalMethod = exampleClass.getMethod("normalMethodReturningPrimitive", int.class);
+        Object exampleInstance = exampleClass.newInstance();
+        assertEquals(0, normalMethod.invoke(exampleInstance, 123));
+        transcript.assertEventsSoFar("methodInvoked: ExampleClass.__constructor__()",
+                "methodInvoked: ExampleClass.normalMethodReturningPrimitive(int 123)");
+    }
+
+    @Test
     public void callingNativeMethodShouldInvokeClassHandler() throws Exception {
         Method normalMethod = exampleClass.getDeclaredMethod("nativeMethod", String.class, int.class);
         Object exampleInstance = exampleClass.newInstance();
@@ -223,8 +234,9 @@ public class InstrumentingClassLoaderTest {
     }
 
     public static class MyClassHandler implements ClassHandler {
+        private static Object GENERATE_YOUR_OWN_VALUE = new Object();
         private Transcript transcript;
-        private Object valueToReturn;
+        private Object valueToReturn = GENERATE_YOUR_OWN_VALUE;
 
         public MyClassHandler(Transcript transcript) {
             this.transcript = transcript;
@@ -249,7 +261,7 @@ public class InstrumentingClassLoaderTest {
             buf.append(")");
             transcript.add(buf.toString());
 
-            if (valueToReturn != null) return valueToReturn;
+            if (valueToReturn != GENERATE_YOUR_OWN_VALUE) return valueToReturn;
             return "response from " + buf.toString();
         }
 
