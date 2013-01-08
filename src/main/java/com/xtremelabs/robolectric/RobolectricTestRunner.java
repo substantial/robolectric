@@ -54,6 +54,7 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
 
     // fields in the RobolectricTestRunner in the original ClassLoader
     private final DatabaseMap databaseMap;
+    private RobolectricTestRunner.MyBlockJUnit4ClassRunner helperRunner;
 
     /**
      * Creates a runner to run {@code testClass}. Looks in your working directory for your AndroidManifest.xml file
@@ -100,7 +101,7 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
             throw new RuntimeException(e);
         }
 
-        final Statement statement = super.methodBlock(bootstrappedMethod);
+        final Statement statement = helperRunner.methodBlock(bootstrappedMethod);
         return new Statement() {
             @Override public void evaluate() throws Throwable {
                 HashMap<Field,Object> withConstantAnnos = getWithConstantAnnotations(method.getMethod());
@@ -138,6 +139,11 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
             sharedRobolectricContext = robolectricContext;
 
             bootstrappedTestClass = robolectricContext.bootstrapTestClass(getTestClass().getJavaClass());
+            try {
+                helperRunner = new MyBlockJUnit4ClassRunner();
+            } catch (InitializationError initializationError) {
+                throw new RuntimeException(initializationError);
+            }
 
             Thread.currentThread().setContextClassLoader(sharedRobolectricContext.getRobolectricClassLoader());
         }
@@ -515,6 +521,17 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
 
         public T set(Runner testRunner, T t) {
             return locals.put(testRunner.getClass(), t);
+        }
+    }
+
+    private class MyBlockJUnit4ClassRunner extends BlockJUnit4ClassRunner {
+        public MyBlockJUnit4ClassRunner() throws InitializationError {
+            super(RobolectricTestRunner.this.bootstrappedTestClass);
+        }
+
+        @Override
+        protected Statement methodBlock(FrameworkMethod method) {
+            return super.methodBlock(method);
         }
     }
 }

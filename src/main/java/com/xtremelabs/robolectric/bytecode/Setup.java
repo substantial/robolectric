@@ -9,6 +9,7 @@ import com.xtremelabs.robolectric.annotation.DisableStrictI18n;
 import com.xtremelabs.robolectric.annotation.EnableStrictI18n;
 import com.xtremelabs.robolectric.annotation.Values;
 import com.xtremelabs.robolectric.internal.DoNotInstrument;
+import com.xtremelabs.robolectric.internal.Implements;
 import com.xtremelabs.robolectric.internal.Instrument;
 import com.xtremelabs.robolectric.internal.RealObject;
 import com.xtremelabs.robolectric.internal.RobolectricTestRunnerInterface;
@@ -56,6 +57,7 @@ public class Setup {
                 ResourcePath.class,
                 AndroidTranslator.class,
                 ClassHandler.class,
+                Implements.class,
                 Instrument.class,
                 DoNotInstrument.class,
                 Values.class,
