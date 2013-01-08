@@ -100,8 +100,15 @@ public class RobolectricTestRunnerTest {
         	instance = this;
         }
 
-        @Override protected Application createApplication() {
-            return new MyTestApplication();
+        @Override
+        protected Class<? extends Delegate> getDelegateClass() {
+            return MyDelegate.class;
+        }
+
+        public static class MyDelegate extends Delegate {
+            @Override protected Application createApplication() {
+                return new MyTestApplication();
+            }
         }
     }
 

@@ -146,9 +146,13 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
     public interface DelegateInterface {
         void resetStaticState();
         public void setupApplicationState(Method testMethod);
+
+        void setSharedRobolectricContext(RobolectricContext sharedRobolectricContext);
     }
 
     public static class Delegate implements DelegateInterface {
+        private RobolectricContext sharedRobolectricContext;
+
         @Override
         public void resetStaticState() {
             Robolectric.resetStaticState();
@@ -167,6 +171,39 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
 
             Robolectric.application = ShadowApplication.bind(createApplication(), resourceLoader);
         }
+
+        /**
+         * Override this method if you want to provide your own implementation of Application.
+         * <p/>
+         * This method attempts to instantiate an application instance as specified by the AndroidManifest.xml.
+         *
+         * @return An instance of the Application class specified by the ApplicationManifest.xml or an instance of
+         *         Application if not specified.
+         */
+        protected Application createApplication() {
+            return new ApplicationResolver(sharedRobolectricContext.getRobolectricConfig()).resolveApplication();
+        }
+
+        private ResourceLoader getResourceLoader(final RobolectricConfig robolectricConfig) {
+            ResourceLoader resourceLoader = resourceLoaderForRootAndDirectory.get(robolectricConfig);
+            if (resourceLoader == null ) {
+                List<ResourcePath> resourcePaths = sharedRobolectricContext.getResourcePaths(robolectricConfig);
+                resourceLoader = createResourceLoader(resourcePaths);
+                resourceLoaderForRootAndDirectory.put(robolectricConfig, resourceLoader);
+            }
+            return resourceLoader;
+        }
+
+        // this method must live on a RobolectricClassLoader-loaded class, so it can't be on RobolectricContext
+        protected ResourceLoader createResourceLoader(List<ResourcePath> resourcePaths) {
+            return new ResourceLoader(resourcePaths);
+        }
+
+
+        @Override
+        public void setSharedRobolectricContext(RobolectricContext sharedRobolectricContext) {
+            this.sharedRobolectricContext = sharedRobolectricContext;
+        }
     }
 
     /*
@@ -182,15 +219,17 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
 
         DatabaseConfig.setDatabaseMap(databaseMap); //Set static DatabaseMap in DBConfig
 
-        setupApplicationState(method);
+        delegate.setupApplicationState(method);
 
         beforeTest(method);
     }
 
     private DelegateInterface getDelegate() {
         try {
-            Class<DelegateInterface> delegateClass = (Class<DelegateInterface>) bootstrappedTestClass.getClassLoader().loadClass(Delegate.class.getName());
-            return delegateClass.newInstance();
+            Class<DelegateInterface> delegateClass = (Class<DelegateInterface>) bootstrappedTestClass.getClassLoader().loadClass(getDelegateClass().getName());
+            DelegateInterface delegateInterface = delegateClass.newInstance();
+            delegateInterface.setSharedRobolectricContext(sharedRobolectricContext);
+            return delegateInterface;
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         } catch (InstantiationException e) {
@@ -198,6 +237,10 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected Class<? extends Delegate> getDelegateClass() {
+        return Delegate.class;
     }
 
     @Override public void internalAfterTest(final Method method) {
@@ -265,7 +308,7 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
     protected void resetStaticState() {
     }
 
-    private String determineResourceQualifiers(Method method) {
+    private static String determineResourceQualifiers(Method method) {
         String qualifiers = "";
         Values values = method.getAnnotation(Values.class);
         if (values != null) {
@@ -427,33 +470,6 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
             }
             ShadowLog.stream = stream;
         }
-    }
-
-    /**
-     * Override this method if you want to provide your own implementation of Application.
-     * <p/>
-     * This method attempts to instantiate an application instance as specified by the AndroidManifest.xml.
-     *
-     * @return An instance of the Application class specified by the ApplicationManifest.xml or an instance of
-     *         Application if not specified.
-     */
-    protected Application createApplication() {
-        return new ApplicationResolver(sharedRobolectricContext.getRobolectricConfig()).resolveApplication();
-    }
-
-    private ResourceLoader getResourceLoader(final RobolectricConfig robolectricConfig) {
-        ResourceLoader resourceLoader = resourceLoaderForRootAndDirectory.get(robolectricConfig);
-        if (resourceLoader == null ) {
-            List<ResourcePath> resourcePaths = sharedRobolectricContext.getResourcePaths(robolectricConfig);
-            resourceLoader = createResourceLoader(resourcePaths);
-            resourceLoaderForRootAndDirectory.put(robolectricConfig, resourceLoader);
-        }
-        return resourceLoader;
-    }
-
-    // this method must live on a RobolectricClassLoader-loaded class, so it can't be on RobolectricContext
-    protected ResourceLoader createResourceLoader(List<ResourcePath> resourcePaths) {
-        return new ResourceLoader(resourcePaths);
     }
 
     private String findResourcePackageName(final File projectManifestFile) throws ParserConfigurationException, IOException, SAXException {

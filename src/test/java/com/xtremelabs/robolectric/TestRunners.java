@@ -56,8 +56,15 @@ public class TestRunners {
         }
 
         @Override
-        public void setupApplicationState(Method testMethod) {
-            // Don't do any resource loading or app init, because that's what we're trying to test here.
+        protected Class<? extends Delegate> getDelegateClass() {
+            return MyDelegate.class;
+        }
+
+        public static class MyDelegate extends Delegate {
+            @Override
+            public void setupApplicationState(Method testMethod) {
+                // Don't do any resource loading or app init, because that's what we're trying to test here.
+            }
         }
     }
 
@@ -128,8 +135,15 @@ public class TestRunners {
         }
 
         @Override
-        public void setupApplicationState(Method testMethod) {
-            // Don't do any resource loading or app init, because that's what we're trying to test here.
+        protected Class<? extends Delegate> getDelegateClass() {
+            return MyDelegate.class;
+        }
+
+        public static class MyDelegate extends Delegate {
+            @Override
+            public void setupApplicationState(Method testMethod) {
+                // Don't do any resource loading or app init, because that's what we're trying to test here.
+            }
         }
     }
 }

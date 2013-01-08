@@ -67,8 +67,15 @@ public class CustomRobolectricTestRunnerTest {
             afterTestCallCount++;
         }
 
-        @Override protected Application createApplication() {
-            return new CustomApplication();
+        @Override
+        protected Class<? extends Delegate> getDelegateClass() {
+            return MyDelegate.class;
+        }
+
+        public static class MyDelegate extends Delegate {
+            @Override protected Application createApplication() {
+                return new CustomApplication();
+            }
         }
     }
 

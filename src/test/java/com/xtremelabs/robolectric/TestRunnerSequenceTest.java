@@ -38,8 +38,15 @@ public class TestRunnerSequenceTest {
         }
 
         @Override
-        public void setupApplicationState(Method testMethod) {
-            transcript.add("setupApplicationState");
+        protected Class<? extends Delegate> getDelegateClass() {
+            return MyDelegate.class;
+        }
+
+        public static class MyDelegate extends Delegate {
+            @Override
+            public void setupApplicationState(Method testMethod) {
+                transcript.add("setupApplicationState");
+            }
         }
     }
 }
