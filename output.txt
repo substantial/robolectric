@@ -24,12 +24,12 @@ public class com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$Cl
   // access flags 0x1
   public $$robo$$InstrumentingClassLoaderTest$ClassWithFunnyConstructors_d738___constructor__(Ljava/lang/String;)V
    L0
-    LINENUMBER 325 L0
+    LINENUMBER 329 L0
     ALOAD 0
     ALOAD 1
     PUTFIELD com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$ClassWithFunnyConstructors.name : Ljava/lang/String;
    L1
-    LINENUMBER 326 L1
+    LINENUMBER 330 L1
     RETURN
    L2
     LOCALVARIABLE this Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$ClassWithFunnyConstructors; L0 L2 0
@@ -40,12 +40,12 @@ public class com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$Cl
   // access flags 0x1
   public $$robo$$InstrumentingClassLoaderTest$ClassWithFunnyConstructors_d738___constructor__(Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent;Ljava/lang/String;)V
    L0
-    LINENUMBER 329 L0
+    LINENUMBER 333 L0
     ALOAD 0
     ALOAD 1
     PUTFIELD com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$ClassWithFunnyConstructors.uninstrumentedParent : Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent;
    L1
-    LINENUMBER 330 L1
+    LINENUMBER 334 L1
     RETURN
    L2
     LOCALVARIABLE this Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$ClassWithFunnyConstructors; L0 L2 0
@@ -63,10 +63,21 @@ public class com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$Cl
     MAXSTACK = 2
     MAXLOCALS = 2
 
+public com.xtremelabs.robolectric.bytecode.InstrumentingClassLoaderTest$ClassWithFunnyConstructors(java.lang.String);
+  Code:
+   0:	aload_0
+   1:	new	#1; //class com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent
+   4:	dup
+   5:	aload_1
+   6:	invokespecial	#2; //Method com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent."<init>":(Ljava/lang/String;)V
+   9:	ldc	#3; //String foo
+   11:	invokespecial	#4; //Method "<init>":(Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent;Ljava/lang/String;)V
+   14:	return
+
   // access flags 0x1
   public <init>(Ljava/lang/String;)V
    L0
-    LINENUMBER 324 L0
+    LINENUMBER 328 L0
     ALOAD 0
     NEW com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent
     DUP
@@ -104,10 +115,21 @@ public class com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$Cl
     MAXSTACK = 3
     MAXLOCALS = 3
 
+public com.xtremelabs.robolectric.bytecode.InstrumentingClassLoaderTest$ClassWithFunnyConstructors(com.xtremelabs.robolectric.bytecode.InstrumentingClassLoaderTest$UninstrumentedParent, java.lang.String);
+  Code:
+   0:	aload_0
+   1:	invokespecial	#5; //Method java/lang/Object."<init>":()V
+   4:	aload_0
+   5:	aload_1
+   6:	putfield	#6; //Field uninstrumentedParent:Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent;
+   9:	return
+
+}
+
   // access flags 0x1
   public <init>(Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent;Ljava/lang/String;)V
    L0
-    LINENUMBER 328 L0
+    LINENUMBER 332 L0
     ALOAD 0
     INVOKESPECIAL java/lang/Object.<init> ()V
     LDC Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$ClassWithFunnyConstructors;.class
