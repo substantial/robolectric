@@ -1,20 +1,7 @@
-// class version 50.0 (50)
+// class version 49.0 (49)
 // access flags 0x21
-public class com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$ClassWithFunnyConstructors {
+public class com/google/android/maps/GeoPoint {
 
-  // compiled from: InstrumentingClassLoaderTest.java
-
-  @Lcom/xtremelabs/robolectric/internal/Instrument;()
-  // access flags 0x9
-  public static INNERCLASS com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest UninstrumentedParent
-  // access flags 0x9
-  public static INNERCLASS com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$ClassWithFunnyConstructors com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest ClassWithFunnyConstructors
-
-  // access flags 0x12
-  private final Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent; uninstrumentedParent
-
-  // access flags 0x2
-  private Ljava/lang/String; name
 
   // access flags 0x1
   // signature Ljava/lang/Object;
@@ -22,143 +9,354 @@ public class com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$Cl
   public Ljava/lang/Object; __robo_data__
 
   // access flags 0x1
-  public $$robo$$InstrumentingClassLoaderTest$ClassWithFunnyConstructors_d738___constructor__(Ljava/lang/String;)V
+  public $$robo$$GeoPoint_bc6f___constructor__(II)V
    L0
-    LINENUMBER 329 L0
-    ALOAD 0
-    ALOAD 1
-    PUTFIELD com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$ClassWithFunnyConstructors.name : Ljava/lang/String;
-   L1
-    LINENUMBER 330 L1
     RETURN
-   L2
-    LOCALVARIABLE this Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$ClassWithFunnyConstructors; L0 L2 0
-    LOCALVARIABLE name Ljava/lang/String; L0 L2 1
-    MAXSTACK = 4
-    MAXLOCALS = 2
-
-  // access flags 0x1
-  public $$robo$$InstrumentingClassLoaderTest$ClassWithFunnyConstructors_d738___constructor__(Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent;Ljava/lang/String;)V
-   L0
-    LINENUMBER 333 L0
-    ALOAD 0
-    ALOAD 1
-    PUTFIELD com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$ClassWithFunnyConstructors.uninstrumentedParent : Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent;
-   L1
-    LINENUMBER 334 L1
-    RETURN
-   L2
-    LOCALVARIABLE this Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$ClassWithFunnyConstructors; L0 L2 0
-    LOCALVARIABLE uninstrumentedParent Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent; L0 L2 1
-    LOCALVARIABLE fooString Ljava/lang/String; L0 L2 2
-    MAXSTACK = 2
+    LOCALVARIABLE this Lcom/android/mkstubs/stubber/MethodStubber; L0 L0 0
+    MAXSTACK = 3
     MAXLOCALS = 3
 
-  // access flags 0x0
-  __constructor__(Ljava/lang/String;)V
-    ALOAD 0
-    ALOAD 1
-    INVOKESPECIAL com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$ClassWithFunnyConstructors.$$robo$$InstrumentingClassLoaderTest$ClassWithFunnyConstructors_d738___constructor__ (Ljava/lang/String;)V
-    RETURN
-    MAXSTACK = 2
-    MAXLOCALS = 2
-
-public com.xtremelabs.robolectric.bytecode.InstrumentingClassLoaderTest$ClassWithFunnyConstructors(java.lang.String);
-  Code:
-   0:	aload_0
-   1:	new	#1; //class com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent
-   4:	dup
-   5:	aload_1
-   6:	invokespecial	#2; //Method com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent."<init>":(Ljava/lang/String;)V
-   9:	ldc	#3; //String foo
-   11:	invokespecial	#4; //Method "<init>":(Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent;Ljava/lang/String;)V
-   14:	return
+  // access flags 0x1
+  public $$robo$$getLatitudeE6()I
+   L0
+    LINENUMBER 36 L0
+    NEW java/lang/RuntimeException
+    DUP
+    LDC "stub"
+    INVOKESPECIAL java/lang/RuntimeException.<init> (Ljava/lang/String;)V
+    ATHROW
+   L1
+    LOCALVARIABLE this Lcom/android/mkstubs/stubber/MethodStubber; L0 L1 0
+    MAXSTACK = 3
+    MAXLOCALS = 1
 
   // access flags 0x1
-  public <init>(Ljava/lang/String;)V
+  public $$robo$$getLongitudeE6()I
    L0
-    LINENUMBER 328 L0
-    ALOAD 0
-    NEW com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent
+    LINENUMBER 36 L0
+    NEW java/lang/RuntimeException
     DUP
-    ALOAD 1
-    INVOKESPECIAL com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent.<init> (Ljava/lang/String;)V
-    LDC "foo"
-    INVOKESPECIAL com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$ClassWithFunnyConstructors.<init> (Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent;Ljava/lang/String;)V
-    LDC Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$ClassWithFunnyConstructors;.class
-    LDC "__constructor__"
-    ALOAD 0
-    ICONST_1
-    ANEWARRAY java/lang/String
+    LDC "stub"
+    INVOKESPECIAL java/lang/RuntimeException.<init> (Ljava/lang/String;)V
+    ATHROW
+   L1
+    LOCALVARIABLE this Lcom/android/mkstubs/stubber/MethodStubber; L0 L1 0
+    MAXSTACK = 3
+    MAXLOCALS = 1
+
+  // access flags 0x1
+  public $$robo$$toString()Ljava/lang/String;
+   L0
+    LINENUMBER 36 L0
+    NEW java/lang/RuntimeException
     DUP
-    ICONST_0
-    LDC "java.lang.String"
-    AASTORE
-    ICONST_1
-    ANEWARRAY java/lang/Object
+    LDC "stub"
+    INVOKESPECIAL java/lang/RuntimeException.<init> (Ljava/lang/String;)V
+    ATHROW
+   L1
+    LOCALVARIABLE this Lcom/android/mkstubs/stubber/MethodStubber; L0 L1 0
+    MAXSTACK = 3
+    MAXLOCALS = 1
+
+  // access flags 0x1
+  public $$robo$$equals(Ljava/lang/Object;)Z
+   L0
+    LINENUMBER 36 L0
+    NEW java/lang/RuntimeException
     DUP
-    ICONST_0
-    ALOAD 1
-    AASTORE
-    INVOKESTATIC com/xtremelabs/robolectric/bytecode/RobolectricInternals.methodInvoked (Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Object;[Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;
-    RETURN
-    MAXSTACK = 8
+    LDC "stub"
+    INVOKESPECIAL java/lang/RuntimeException.<init> (Ljava/lang/String;)V
+    ATHROW
+   L1
+    LOCALVARIABLE this Lcom/android/mkstubs/stubber/MethodStubber; L0 L1 0
+    MAXSTACK = 3
     MAXLOCALS = 2
 
+  // access flags 0x1
+  public $$robo$$hashCode()I
+   L0
+    LINENUMBER 36 L0
+    NEW java/lang/RuntimeException
+    DUP
+    LDC "stub"
+    INVOKESPECIAL java/lang/RuntimeException.<init> (Ljava/lang/String;)V
+    ATHROW
+   L1
+    LOCALVARIABLE this Lcom/android/mkstubs/stubber/MethodStubber; L0 L1 0
+    MAXSTACK = 3
+    MAXLOCALS = 1
+
   // access flags 0x0
-  __constructor__(Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent;Ljava/lang/String;)V
+  __constructor__(II)V
     ALOAD 0
-    ALOAD 1
-    ALOAD 2
-    INVOKESPECIAL com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$ClassWithFunnyConstructors.$$robo$$InstrumentingClassLoaderTest$ClassWithFunnyConstructors_d738___constructor__ (Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent;Ljava/lang/String;)V
+    ILOAD 1
+    ILOAD 2
+    INVOKESPECIAL com/google/android/maps/GeoPoint.$$robo$$GeoPoint_bc6f___constructor__ (II)V
     RETURN
     MAXSTACK = 3
     MAXLOCALS = 3
 
-public com.xtremelabs.robolectric.bytecode.InstrumentingClassLoaderTest$ClassWithFunnyConstructors(com.xtremelabs.robolectric.bytecode.InstrumentingClassLoaderTest$UninstrumentedParent, java.lang.String);
-  Code:
-   0:	aload_0
-   1:	invokespecial	#5; //Method java/lang/Object."<init>":()V
-   4:	aload_0
-   5:	aload_1
-   6:	putfield	#6; //Field uninstrumentedParent:Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent;
-   9:	return
-
-}
-
   // access flags 0x1
-  public <init>(Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$UninstrumentedParent;Ljava/lang/String;)V
+  public <init>(II)V
    L0
-    LINENUMBER 332 L0
-    ALOAD 0
-    INVOKESPECIAL java/lang/Object.<init> ()V
-    LDC Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$ClassWithFunnyConstructors;.class
+    LINENUMBER 36 L0
+    NEW java/lang/RuntimeException
+    DUP
+    LDC "stub"
+    INVOKESPECIAL java/lang/RuntimeException.<init> (Ljava/lang/String;)V
+    ATHROW
+    LDC Lcom/google/android/maps/GeoPoint;.class
     LDC "__constructor__"
     ALOAD 0
     ICONST_2
     ANEWARRAY java/lang/String
     DUP
     ICONST_0
-    LDC "com.xtremelabs.robolectric.bytecode.InstrumentingClassLoaderTest$UninstrumentedParent"
+    LDC "int"
     AASTORE
     DUP
     ICONST_1
-    LDC "java.lang.String"
+    LDC "int"
     AASTORE
     ICONST_2
     ANEWARRAY java/lang/Object
     DUP
     ICONST_0
-    ALOAD 1
+    ILOAD 1
+    NEW java/lang/Integer
+    DUP_X1
+    SWAP
+    INVOKESPECIAL java/lang/Integer.<init> (I)V
     AASTORE
     DUP
     ICONST_1
-    ALOAD 2
+    ILOAD 2
+    NEW java/lang/Integer
+    DUP_X1
+    SWAP
+    INVOKESPECIAL java/lang/Integer.<init> (I)V
     AASTORE
     INVOKESTATIC com/xtremelabs/robolectric/bytecode/RobolectricInternals.methodInvoked (Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Object;[Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;
     RETURN
-    MAXSTACK = 8
+    MAXSTACK = 3
     MAXLOCALS = 3
+
+  // access flags 0x0
+  $$robo$$GeoPoint_bc6f_getLatitudeE6()I
+    ALOAD 0
+    INVOKESPECIAL com/google/android/maps/GeoPoint.$$robo$$getLatitudeE6 ()I
+    IRETURN
+    MAXSTACK = 1
+    MAXLOCALS = 1
+
+  // access flags 0x1
+  public getLatitudeE6()I
+    ALOAD 0
+    GETFIELD com/google/android/maps/GeoPoint.__robo_data__ : Ljava/lang/Object;
+    INSTANCEOF com/google/android/maps/GeoPoint
+    IFNE L0
+    ALOAD 0
+    INVOKESTATIC com/xtremelabs/robolectric/bytecode/RobolectricInternals.shouldCallDirectly (Ljava/lang/Object;)Z
+    IFEQ L1
+   L0
+    ALOAD 0
+    INVOKESPECIAL com/google/android/maps/GeoPoint.$$robo$$getLatitudeE6 ()I
+    IRETURN
+   L1
+    LDC Lcom/google/android/maps/GeoPoint;.class
+    LDC "getLatitudeE6"
+    ALOAD 0
+    ICONST_0
+    ANEWARRAY java/lang/String
+    ICONST_0
+    ANEWARRAY java/lang/Object
+    INVOKESTATIC com/xtremelabs/robolectric/bytecode/RobolectricInternals.methodInvoked (Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Object;[Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;
+    DUP
+    IFNONNULL L2
+    POP
+    ICONST_0
+    GOTO L3
+   L2
+    CHECKCAST java/lang/Number
+    INVOKEVIRTUAL java/lang/Number.intValue ()I
+   L3
+    IRETURN
+    MAXSTACK = 5
+    MAXLOCALS = 1
+
+  // access flags 0x0
+  $$robo$$GeoPoint_bc6f_getLongitudeE6()I
+    ALOAD 0
+    INVOKESPECIAL com/google/android/maps/GeoPoint.$$robo$$getLongitudeE6 ()I
+    IRETURN
+    MAXSTACK = 1
+    MAXLOCALS = 1
+
+  // access flags 0x1
+  public getLongitudeE6()I
+    ALOAD 0
+    GETFIELD com/google/android/maps/GeoPoint.__robo_data__ : Ljava/lang/Object;
+    INSTANCEOF com/google/android/maps/GeoPoint
+    IFNE L0
+    ALOAD 0
+    INVOKESTATIC com/xtremelabs/robolectric/bytecode/RobolectricInternals.shouldCallDirectly (Ljava/lang/Object;)Z
+    IFEQ L1
+   L0
+    ALOAD 0
+    INVOKESPECIAL com/google/android/maps/GeoPoint.$$robo$$getLongitudeE6 ()I
+    IRETURN
+   L1
+    LDC Lcom/google/android/maps/GeoPoint;.class
+    LDC "getLongitudeE6"
+    ALOAD 0
+    ICONST_0
+    ANEWARRAY java/lang/String
+    ICONST_0
+    ANEWARRAY java/lang/Object
+    INVOKESTATIC com/xtremelabs/robolectric/bytecode/RobolectricInternals.methodInvoked (Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Object;[Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;
+    DUP
+    IFNONNULL L2
+    POP
+    ICONST_0
+    GOTO L3
+   L2
+    CHECKCAST java/lang/Number
+    INVOKEVIRTUAL java/lang/Number.intValue ()I
+   L3
+    IRETURN
+    MAXSTACK = 5
+    MAXLOCALS = 1
+
+  // access flags 0x0
+  $$robo$$GeoPoint_bc6f_toString()Ljava/lang/String;
+    ALOAD 0
+    INVOKESPECIAL com/google/android/maps/GeoPoint.$$robo$$toString ()Ljava/lang/String;
+    ARETURN
+    MAXSTACK = 1
+    MAXLOCALS = 1
+
+  // access flags 0x1
+  public toString()Ljava/lang/String;
+    ALOAD 0
+    GETFIELD com/google/android/maps/GeoPoint.__robo_data__ : Ljava/lang/Object;
+    INSTANCEOF com/google/android/maps/GeoPoint
+    IFNE L0
+    ALOAD 0
+    INVOKESTATIC com/xtremelabs/robolectric/bytecode/RobolectricInternals.shouldCallDirectly (Ljava/lang/Object;)Z
+    IFEQ L1
+   L0
+    ALOAD 0
+    INVOKESPECIAL com/google/android/maps/GeoPoint.$$robo$$toString ()Ljava/lang/String;
+    ARETURN
+   L1
+    LDC Lcom/google/android/maps/GeoPoint;.class
+    LDC "toString"
+    ALOAD 0
+    ICONST_0
+    ANEWARRAY java/lang/String
+    ICONST_0
+    ANEWARRAY java/lang/Object
+    INVOKESTATIC com/xtremelabs/robolectric/bytecode/RobolectricInternals.methodInvoked (Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Object;[Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;
+    CHECKCAST java/lang/String
+    ARETURN
+    MAXSTACK = 5
+    MAXLOCALS = 1
+
+  // access flags 0x0
+  $$robo$$GeoPoint_bc6f_equals(Ljava/lang/Object;)Z
+    ALOAD 0
+    ALOAD 1
+    INVOKESPECIAL com/google/android/maps/GeoPoint.$$robo$$equals (Ljava/lang/Object;)Z
+    IRETURN
+    MAXSTACK = 2
+    MAXLOCALS = 2
+
+  // access flags 0x1
+  public equals(Ljava/lang/Object;)Z
+    ALOAD 0
+    GETFIELD com/google/android/maps/GeoPoint.__robo_data__ : Ljava/lang/Object;
+    INSTANCEOF com/google/android/maps/GeoPoint
+    IFNE L0
+    ALOAD 0
+    INVOKESTATIC com/xtremelabs/robolectric/bytecode/RobolectricInternals.shouldCallDirectly (Ljava/lang/Object;)Z
+    IFEQ L1
+   L0
+    ALOAD 0
+    ALOAD 1
+    INVOKESPECIAL com/google/android/maps/GeoPoint.$$robo$$equals (Ljava/lang/Object;)Z
+    IRETURN
+   L1
+    LDC Lcom/google/android/maps/GeoPoint;.class
+    LDC "equals"
+    ALOAD 0
+    ICONST_1
+    ANEWARRAY java/lang/String
+    DUP
+    ICONST_0
+    LDC "java.lang.Object"
+    AASTORE
+    ICONST_1
+    ANEWARRAY java/lang/Object
+    DUP
+    ICONST_0
+    ALOAD 1
+    AASTORE
+    INVOKESTATIC com/xtremelabs/robolectric/bytecode/RobolectricInternals.methodInvoked (Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Object;[Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;
+    DUP
+    IFNONNULL L2
+    POP
+    ICONST_0
+    GOTO L3
+   L2
+    CHECKCAST java/lang/Boolean
+    INVOKEVIRTUAL java/lang/Boolean.booleanValue ()Z
+   L3
+    IRETURN
+    MAXSTACK = 8
+    MAXLOCALS = 2
+
+  // access flags 0x0
+  $$robo$$GeoPoint_bc6f_hashCode()I
+    ALOAD 0
+    INVOKESPECIAL com/google/android/maps/GeoPoint.$$robo$$hashCode ()I
+    IRETURN
+    MAXSTACK = 1
+    MAXLOCALS = 1
+
+  // access flags 0x1
+  public hashCode()I
+    ALOAD 0
+    GETFIELD com/google/android/maps/GeoPoint.__robo_data__ : Ljava/lang/Object;
+    INSTANCEOF com/google/android/maps/GeoPoint
+    IFNE L0
+    ALOAD 0
+    INVOKESTATIC com/xtremelabs/robolectric/bytecode/RobolectricInternals.shouldCallDirectly (Ljava/lang/Object;)Z
+    IFEQ L1
+   L0
+    ALOAD 0
+    INVOKESPECIAL com/google/android/maps/GeoPoint.$$robo$$hashCode ()I
+    IRETURN
+   L1
+    LDC Lcom/google/android/maps/GeoPoint;.class
+    LDC "hashCode"
+    ALOAD 0
+    ICONST_0
+    ANEWARRAY java/lang/String
+    ICONST_0
+    ANEWARRAY java/lang/Object
+    INVOKESTATIC com/xtremelabs/robolectric/bytecode/RobolectricInternals.methodInvoked (Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Object;[Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;
+    DUP
+    IFNONNULL L2
+    POP
+    ICONST_0
+    GOTO L3
+   L2
+    CHECKCAST java/lang/Number
+    INVOKEVIRTUAL java/lang/Number.intValue ()I
+   L3
+    IRETURN
+    MAXSTACK = 5
+    MAXLOCALS = 1
 
   // access flags 0x1
   // signature ()V
@@ -171,12 +369,12 @@ public com.xtremelabs.robolectric.bytecode.InstrumentingClassLoaderTest$ClassWit
     MAXLOCALS = 1
 
   // access flags 0x1
-  public <init>(Lcom/xtremelabs/robolectric/bytecode/DirectObjectMarker;Lcom/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$ClassWithFunnyConstructors;)V
+  public <init>(Lcom/xtremelabs/robolectric/bytecode/DirectObjectMarker;Lcom/google/android/maps/GeoPoint;)V
     ALOAD 0
     INVOKESPECIAL java/lang/Object.<init> ()V
     ALOAD 0
     ALOAD 2
-    PUTFIELD com/xtremelabs/robolectric/bytecode/InstrumentingClassLoaderTest$ClassWithFunnyConstructors.__robo_data__ : Ljava/lang/Object;
+    PUTFIELD com/google/android/maps/GeoPoint.__robo_data__ : Ljava/lang/Object;
     RETURN
     MAXSTACK = 2
     MAXLOCALS = 3

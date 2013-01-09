@@ -17,6 +17,7 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.util.TraceClassVisitor;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -108,8 +109,12 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
 
 //        CheckClassAdapter.verify(new ClassReader(classBytes), false, new PrintWriter(System.out));
 
-        if (debug || className.contains("LocalBroadcastManager") || className.contains("Child")) {
-            new ClassReader(classBytes).accept(new TraceClassVisitor(new PrintWriter(System.out)), 0);
+        if (debug || className.contains("GeoPoint") || className.contains("ClassWithFunnyConstructors")) {
+            try {
+                new ClassReader(classBytes).accept(new TraceClassVisitor(new PrintWriter(new FileWriter("./output.txt"))), 0);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         return classBytes;
@@ -269,12 +274,17 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
 
                 if (node.getOpcode() == INVOKESPECIAL) {
                     MethodInsnNode mnode = (MethodInsnNode) node;
-                    assert mnode.name.equals("<init>");
-                    return removedInstructions;
+                    if (mnode.owner.equals(internalClassName) || mnode.owner.equals(classNode.superName)) {
+                        assert mnode.name.equals("<init>");
+                        return removedInstructions;
+                    }
                 }
 
                 if (node.getOpcode() == ATHROW) {
-                    removedInstructions.clear();
+//                    removedInstructions.clear();
+                    ctor.visitCode();
+                    ctor.visitInsn(RETURN);
+                    ctor.visitEnd();
                     System.out.println("ignoring throw in " + ctor.name + ctor.desc);
                     return removedInstructions;
                 }
