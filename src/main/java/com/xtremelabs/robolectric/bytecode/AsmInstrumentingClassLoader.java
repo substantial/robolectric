@@ -35,7 +35,7 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
     private static final Type STRING_TYPE = getType(String.class);
     private static final Type ROBOLECTRIC_INTERNALS_TYPE = Type.getType(RobolectricInternals.class);
 
-    private static boolean debug = true;
+    private static boolean debug = false;
 
     private final Setup setup;
     private final Map<String, Class> classes = new HashMap<String, Class>();
@@ -108,7 +108,7 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
 
 //        CheckClassAdapter.verify(new ClassReader(classBytes), false, new PrintWriter(System.out));
 
-        if (debug || className.contains("arent") || className.contains("Child")) {
+        if (debug || className.contains("LocalBroadcastManager") || className.contains("Child")) {
             new ClassReader(classBytes).accept(new TraceClassVisitor(new PrintWriter(System.out)), 0);
         }
 
@@ -152,6 +152,20 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
 
         public Type getReturnType() {
             return Type.getReturnType(desc);
+        }
+
+        public void pushZero(Type type) {
+            if (type.equals(Type.BOOLEAN_TYPE)) {
+                push(false);
+            } else if (type.equals(Type.INT_TYPE) || type.equals(Type.SHORT_TYPE) || type.equals(Type.BYTE_TYPE) || type.equals(Type.CHAR_TYPE)) {
+                push(0);
+            } else if (type.equals(Type.LONG_TYPE)) {
+                push(0l);
+            } else if (type.equals(Type.FLOAT_TYPE)) {
+                push(0f);
+            } else if (type.equals(Type.DOUBLE_TYPE)) {
+                push(0d);
+            } else throw new IllegalStateException("huh?");
         }
     }
 
@@ -398,15 +412,25 @@ public class AsmInstrumentingClassLoader extends ClassLoader implements Opcodes,
 
             Type returnType = m.getReturnType();
             int sort = returnType.getSort();
-            if (sort != VOID && sort != OBJECT && sort != ARRAY) {
-                Label notNull = m.newLabel();
-                m.dup();
-                m.ifNonNull(notNull);
-                m.visitInsn(Opcodes.ICONST_0);
-                m.box(returnType);
-                m.visitLabel(notNull);
-            }
-            m.unbox(returnType);
+            if (sort != VOID)
+                if (sort == OBJECT || sort == ARRAY) {
+                    m.checkCast(returnType);
+                } else {
+                    Label notNull = m.newLabel();
+                    Label finished = m.newLabel();
+                    m.dup();
+                    m.ifNonNull(notNull);
+//                if (returnType.getSize() == 2) {
+//                    m.pop2();
+//                } else {
+                    m.pop();
+//                }
+                    m.pushZero(returnType);
+                    m.goTo(finished);
+                    m.visitLabel(notNull);
+                    m.unbox(returnType);
+                    m.visitLabel(finished);
+                }
         }
     }
 }

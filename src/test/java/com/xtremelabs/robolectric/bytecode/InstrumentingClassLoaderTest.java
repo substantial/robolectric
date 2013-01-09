@@ -115,35 +115,72 @@ public class InstrumentingClassLoaderTest {
     }
 
     @Test
-    public void callingNormalMethodReturningPrimitiveShouldInvokeClassHandler() throws Exception {
+    public void callingNormalMethodReturningIntegerShouldInvokeClassHandler() throws Exception {
+        Class<?> exampleClass = loadClass(ClassWithMethodReturningInteger.class);
         classHandler.valueToReturn = 456;
 
-        Method normalMethod = exampleClass.getMethod("normalMethodReturningPrimitive", int.class);
+        Method normalMethod = exampleClass.getMethod("normalMethodReturningInteger", int.class);
         Object exampleInstance = exampleClass.newInstance();
         assertEquals(456, normalMethod.invoke(exampleInstance, 123));
-        transcript.assertEventsSoFar("methodInvoked: ExampleClass.__constructor__()",
-                "methodInvoked: ExampleClass.normalMethodReturningPrimitive(int 123)");
+        transcript.assertEventsSoFar("methodInvoked: ClassWithMethodReturningInteger.__constructor__()",
+                "methodInvoked: ClassWithMethodReturningInteger.normalMethodReturningInteger(int 123)");
     }
-
+    
     @Test
-    public void whenClassHandlerReturnsNull_callingNormalMethodReturningPrimitiveShouldWork() throws Exception {
+    public void whenClassHandlerReturnsNull_callingNormalMethodReturningIntegerShouldWork() throws Exception {
+        Class<?> exampleClass = loadClass(ClassWithMethodReturningInteger.class);
         classHandler.valueToReturn = null;
 
-        Method normalMethod = exampleClass.getMethod("normalMethodReturningPrimitive", int.class);
+        Method normalMethod = exampleClass.getMethod("normalMethodReturningInteger", int.class);
         Object exampleInstance = exampleClass.newInstance();
         assertEquals(0, normalMethod.invoke(exampleInstance, 123));
-        transcript.assertEventsSoFar("methodInvoked: ExampleClass.__constructor__()",
-                "methodInvoked: ExampleClass.normalMethodReturningPrimitive(int 123)");
+        transcript.assertEventsSoFar("methodInvoked: ClassWithMethodReturningInteger.__constructor__()",
+                "methodInvoked: ClassWithMethodReturningInteger.normalMethodReturningInteger(int 123)");
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    @Instrument
+    public static class ClassWithMethodReturningInteger {
+        public int normalMethodReturningInteger(int intArg) {
+            return intArg + 1;
+        }
+    }
+    
+    @Test
+    public void callingNormalMethodReturningDoubleShouldInvokeClassHandler() throws Exception {
+        Class<?> exampleClass = loadClass(ClassWithMethodReturningDouble.class);
+        classHandler.valueToReturn = 456;
+
+        Method normalMethod = exampleClass.getMethod("normalMethodReturningDouble", double.class);
+        Object exampleInstance = exampleClass.newInstance();
+        assertEquals(456.0, normalMethod.invoke(exampleInstance, 123d));
+        transcript.assertEventsSoFar("methodInvoked: ClassWithMethodReturningDouble.__constructor__()",
+                "methodInvoked: ClassWithMethodReturningDouble.normalMethodReturningDouble(double 123.0)");
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    @Instrument
+    public static class ClassWithMethodReturningDouble {
+        public double normalMethodReturningDouble(double doubleArg) {
+            return doubleArg + 1;
+        }
     }
 
     @Test
     public void callingNativeMethodShouldInvokeClassHandler() throws Exception {
+        Class<?> exampleClass = loadClass(ClassWithNativeMethod.class);
         Method normalMethod = exampleClass.getDeclaredMethod("nativeMethod", String.class, int.class);
         Object exampleInstance = exampleClass.newInstance();
-        assertEquals("response from methodInvoked: ExampleClass.nativeMethod(java.lang.String value1, int 123)",
+        assertEquals("response from methodInvoked: ClassWithNativeMethod.nativeMethod(java.lang.String value1, int 123)",
                 normalMethod.invoke(exampleInstance, "value1", 123));
-        transcript.assertEventsSoFar("methodInvoked: ExampleClass.__constructor__()",
-                "methodInvoked: ExampleClass.nativeMethod(java.lang.String value1, int 123)");
+        transcript.assertEventsSoFar("methodInvoked: ClassWithNativeMethod.__constructor__()",
+                "methodInvoked: ClassWithNativeMethod.nativeMethod(java.lang.String value1, int 123)");
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    @Instrument
+    public static class ClassWithNativeMethod {
+        public native String nativeMethod(String stringArg, int intArg);
     }
 
     @Test public void shouldGenerateClassSpecificDirectAccessMethod() throws Exception {
@@ -153,6 +190,46 @@ public class InstrumentingClassLoaderTest {
         Object exampleInstance = exampleClass.newInstance();
         assertEquals("normalMethod(value1, 123)", directMethod.invoke(exampleInstance, "value1", 123));
         transcript.assertEventsSoFar("methodInvoked: ExampleClass.__constructor__()");
+    }
+
+    @Test public void shouldHandleMethodsReturningBoolean() throws Exception {
+        Class<?> exampleClass = loadClass(ClassWithMethodReturningBoolean.class);
+        classHandler.valueToReturn = true;
+
+        Method directMethod = exampleClass.getMethod("normalMethodReturningBoolean", boolean.class, boolean[].class);
+        directMethod.setAccessible(true);
+        Object exampleInstance = exampleClass.newInstance();
+        assertEquals(true, directMethod.invoke(exampleInstance, true, new boolean[0]));
+        transcript.assertEventsSoFar("methodInvoked: ClassWithMethodReturningBoolean.__constructor__()",
+                "methodInvoked: ClassWithMethodReturningBoolean.normalMethodReturningBoolean(boolean true, boolean[] {})");
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    @Instrument
+    public static class ClassWithMethodReturningBoolean {
+        public boolean normalMethodReturningBoolean(boolean boolArg, boolean[] boolArrayArg) {
+            return true;
+        }
+    }
+
+    @Test public void shouldHandleMethodsReturningArray() throws Exception {
+        Class<?> exampleClass = loadClass(ClassWithMethodReturningArray.class);
+        classHandler.valueToReturn = new String[] { "miao, mieuw" };
+
+        Method directMethod = exampleClass.getMethod("normalMethodReturningArray");
+        directMethod.setAccessible(true);
+        Object exampleInstance = exampleClass.newInstance();
+        assertArrayEquals(new String[]{"miao, mieuw"}, (String[]) directMethod.invoke(exampleInstance));
+        transcript.assertEventsSoFar("methodInvoked: ClassWithMethodReturningArray.__constructor__()",
+                "methodInvoked: ClassWithMethodReturningArray.normalMethodReturningArray()");
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    @Instrument
+    public static class ClassWithMethodReturningArray {
+        public String[] normalMethodReturningArray() {
+            return new String[] { "hello, working!" };
+        }
     }
 
     private static void injectClassHandler(ClassLoader classLoader, ClassHandler classHandler) {
@@ -177,12 +254,6 @@ public class InstrumentingClassLoaderTest {
         public String normalMethod(String stringArg, int intArg) {
             return "normalMethod(" + stringArg + ", " + intArg + ")";
         }
-
-        public int normalMethodReturningPrimitive(int intArg) {
-            return intArg + 1;
-        }
-
-        public native String nativeMethod(String stringArg, int intArg);
 
         //        abstract void abstractMethod(); todo
     }
@@ -256,7 +327,9 @@ public class InstrumentingClassLoaderTest {
             buf.append("methodInvoked: ").append(clazz.getSimpleName()).append(".").append(methodName).append("(");
             for (int i = 0; i < paramTypes.length; i++) {
                 if (i > 0) buf.append(", ");
-                buf.append(paramTypes[i]).append(" ").append(params[i]);
+                Object param = params[i];
+                Object display = param.getClass().isArray() ? "{}" : param;
+                buf.append(paramTypes[i]).append(" ").append(display);
             }
             buf.append(")");
             transcript.add(buf.toString());
